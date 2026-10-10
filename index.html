@@ -236,6 +236,70 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact .limlist{margin-top:2px}
 .player.readonly .pname{border-bottom-color:transparent}
 .chip.ro{border-style:dashed}
+
+/* ===== 簡潔表示：1画面に収める ===== */
+.ctiles{display:none}
+#artistwrap .short{display:none}
+.compact-body{overflow:hidden;overscroll-behavior:none}
+.wrap.compact{height:100vh;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding-block:8px;gap:8px;overflow:hidden}
+.compact .board{flex:1 1 auto;min-height:0;gap:8px;grid-template-rows:auto auto auto minmax(0,1fr) auto}
+.view-equal.compact .board{grid-template-areas:"top" "ctrl" "more" "bottom";grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr)}
+.view-focus.compact .board{grid-template-areas:"mini" "ctrl" "more" "bottom";grid-template-rows:auto auto auto minmax(0,1fr)}
+@media (min-width:1000px){
+  .view-equal.compact .board{grid-template-columns:minmax(0,1fr) 340px minmax(0,1fr);grid-template-areas:"top ctrl bottom" "top more bottom";grid-template-rows:auto minmax(0,1fr)}
+  .view-focus.compact .board{grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"mini mini" "bottom ctrl" "bottom more";grid-template-rows:auto auto minmax(0,1fr)}
+}
+.compact .player{display:flex;flex-direction:column;gap:6px;padding:8px;min-height:0;overflow:hidden;align-self:stretch}
+.compact .player>.sec{display:none!important}
+.compact .phead{flex-wrap:nowrap}
+.compact .phead .pname{font-size:15px;padding:0;flex:1 1 auto}
+.compact .phead .chip{font-size:10px;padding:1px 6px}
+.compact .ctiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:6px;flex:1 1 auto;min-height:0}
+.tile{display:flex;flex-direction:column;gap:4px;background:var(--bg2);border:1px solid var(--line-soft);border-radius:10px;padding:4px;min-height:0;min-width:0}
+.tile.capmode{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+.thead{display:flex;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;padding:0;min-height:26px;flex:0 0 auto;font-family:var(--f-num);font-size:26px;font-weight:700;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
+.thead small{font-size:.55em;color:var(--dim)}
+.thead .ic{width:22px;height:22px}
+.thead b.full{color:var(--warn)}
+.thead .capl{display:none;font-family:var(--f-body);font-size:11px;font-weight:700;color:var(--warn)}
+.tile.capmode .capl{display:inline}
+.tstep{display:grid;grid-template-columns:1fr 1fr;flex:1 1 auto;min-height:30px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tstep.one{grid-template-columns:1fr}
+.tstep button{border:0;background:var(--panel);font-size:20px;font-weight:700;min-height:0;padding:0}
+.tstep button:active{background:var(--line)}
+.tstep button+button{border-left:1px solid var(--line)}
+.t-lim .tstep button{font-size:13px}
+.tile .tcap{display:none}
+.tile.capmode .tcap{display:grid}
+.tile.capmode .tstep:not(.tcap){display:none}
+.player.readonly .tstep:not(.tcap){display:none}
+.player.readonly .tile{justify-content:center}
+.compact #ctrl{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"turn die end" "ph ph art";gap:6px;align-items:center;padding:8px}
+.compact #turnline{grid-area:turn;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.compact #turnline small{font-size:11px}
+.compact .phases{grid-area:ph}
+.compact .phases button{min-height:36px;padding:6px 2px;font-size:13px}
+.compact #artistwrap{grid-area:art;font-size:12px;min-height:36px;gap:5px}
+.compact #artistwrap .long{display:none}
+.compact #artistwrap .short{display:inline}
+.compact #artistwrap input{width:18px;height:18px}
+.compact .ctrlrow{display:contents}
+.compact .judge{display:none}
+.compact .die{grid-area:die;width:40px;height:40px;font-size:26px;border-radius:9px}
+.compact #endturn{grid-area:end;min-height:40px;padding:6px 12px}
+.compact #more{gap:8px}
+.compact .mini{flex-wrap:nowrap;padding:6px 10px;gap:8px;overflow:hidden}
+.compact .mini .volbar{display:none}
+.compact .mini .mname{font-size:13px;max-width:6em}
+.compact .mini .stats{flex-wrap:nowrap;gap:8px;overflow:hidden}
+.compact .mini .st{font-size:19px}
+.compact .mini .chip{font-size:10px;padding:1px 6px}
+.compact .mini .chip.role,.compact .mini .swap .t{display:none}
+.compact .mini .mname{flex:0 1 auto;min-width:2.5em}
+@media (max-width:380px){.compact .mini .st{font-size:17px}.compact .mini .st .ic{width:15px;height:15px}.compact .mini .stats{gap:6px}}
+.compact .settings{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 56px);z-index:6;max-height:calc(100dvh - 80px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.compact .top .iconbtn{height:34px}
+@media (max-height:540px){.wrap.compact{height:auto;overflow:visible}.compact-body{overflow:auto}.compact .player{min-height:220px}}
 @media (max-width:560px){.brand small{display:none}.pill.offline{display:none}.iconbtn{padding:0 9px}}
 @media (max-width:360px){.compact .mrow .step button{width:36px}}
 @media (max-width:380px){.step button{width:40px;height:42px}.tk{width:22px;height:22px}.mrow{gap:6px}}
@@ -305,7 +369,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
         <button class="sec-head"><span class="chev">▾</span><span class="lbl">このフェーズでやること</span></button>
         <div class="sec-body"><ul class="hint" id="hint"></ul></div>
       </div>
-      <label class="check"><input type="checkbox" id="artist"> 手札からArtistを出した（1ターン1枚）</label>
+      <label class="check" id="artistwrap"><input type="checkbox" id="artist"> <span class="long">手札からArtistを出した（1ターン1枚）</span><span class="short">Artist済</span></label>
       <div class="ctrlrow">
         <button class="die" id="die" aria-label="サイコロを振る">–</button>
         <div class="judge" id="judge"><span>・4以上</span><span>・偶数</span><span class="by">タップで振る</span></div>
@@ -561,6 +625,7 @@ function setCap(p, k, d){
   addLog(`${pn(p)}：${NAME[k]}の上限 ${Math.max(0,5+cur)} → ${ncap}` + (lost ? `（${lost}${k === 'noise' ? '枚' : '個'}消失）` : ''));
 }
 let armedLim = null, armedLimT = null;
+const capMode = new Set();
 function useLimited(p, name){
   const lim = (S[p].lim || []).slice(); if (lim.length >= 10){ toast('記録できるのは10枚までです'); return; }
   lim.push({n: name}); patch(p, {lim}); addLog(`${pn(p)}：LIMITED「${name || 'カード'}」を使用`);
@@ -673,6 +738,36 @@ function buildPanel(el){
         <p class="note">相手のカード効果で変わることが多いので、どちらのプレイヤーも操作できます。効果が重複したら、その分だけ下げてください。上限を超えた分は自動で消失します。</p>
       </div>
     </div>
+    <div class="ctiles">
+        <div class="tile t-vol" data-tk="vol">
+          <div class="thead">${IC.vol}<b data-f="t-vol">0</b><small>/10</small></div>
+          <span class="tstep"><button data-act="adj" data-k="vol" data-d="-1" aria-label="VOL -1">−</button><button data-act="adj" data-k="vol" data-d="1" aria-label="VOL +1">＋</button></span>
+        </div>
+        <div class="tile c-noise" data-tk="noise">
+          <button class="thead" data-capt="noise" aria-label="VOLノイズ（タップで上限を変更）">${IC.noise}<span class="capl">上限</span><b data-f="t-noise">0</b><small data-f="ts-noise"></small></button>
+          <span class="tstep"><button data-act="adj" data-k="noise" data-d="-1" aria-label="VOLノイズ -1">−</button><button data-act="adj" data-k="noise" data-d="1" aria-label="VOLノイズ +1">＋</button></span>
+          <span class="tstep tcap"><button data-cap="noise" data-d="-1" aria-label="VOLノイズの上限 -1">−</button><button data-cap="noise" data-d="1" aria-label="VOLノイズの上限 +1">＋</button></span>
+        </div>
+        <div class="tile c-a" data-tk="a">
+          <button class="thead" data-capt="a" aria-label="魔力α（タップで上限を変更）">${IC.a}<span class="capl">上限</span><b data-f="t-a">0</b><small data-f="ts-a"></small></button>
+          <span class="tstep"><button data-act="adj" data-k="a" data-d="-1" aria-label="魔力α -1">−</button><button data-act="adj" data-k="a" data-d="1" aria-label="魔力α +1">＋</button></span>
+          <span class="tstep tcap"><button data-cap="a" data-d="-1" aria-label="魔力αの上限 -1">−</button><button data-cap="a" data-d="1" aria-label="魔力αの上限 +1">＋</button></span>
+        </div>
+        <div class="tile c-b" data-tk="b">
+          <button class="thead" data-capt="b" aria-label="魔力β（タップで上限を変更）">${IC.b}<span class="capl">上限</span><b data-f="t-b">0</b><small data-f="ts-b"></small></button>
+          <span class="tstep"><button data-act="adj" data-k="b" data-d="-1" aria-label="魔力β -1">−</button><button data-act="adj" data-k="b" data-d="1" aria-label="魔力β +1">＋</button></span>
+          <span class="tstep tcap"><button data-cap="b" data-d="-1" aria-label="魔力βの上限 -1">−</button><button data-cap="b" data-d="1" aria-label="魔力βの上限 +1">＋</button></span>
+        </div>
+        <div class="tile c-o" data-tk="o">
+          <button class="thead" data-capt="o" aria-label="魔力Ω（タップで上限を変更）">${IC.o}<span class="capl">上限</span><b data-f="t-o">0</b><small data-f="ts-o"></small></button>
+          <span class="tstep"><button data-act="adj" data-k="o" data-d="-1" aria-label="魔力Ω -1">−</button><button data-act="adj" data-k="o" data-d="1" aria-label="魔力Ω +1">＋</button></span>
+          <span class="tstep tcap"><button data-cap="o" data-d="-1" aria-label="魔力Ωの上限 -1">−</button><button data-cap="o" data-d="1" aria-label="魔力Ωの上限 +1">＋</button></span>
+        </div>
+        <div class="tile t-lim" data-tk="lim">
+          <div class="thead">${IC.lim}<b data-f="t-lim">0</b></div>
+          <span class="tstep one"><button data-limquick="1" aria-label="LIMITEDを使用した">使用</button></span>
+        </div>
+    </div>
     <div class="win" data-f="win" hidden><div><h2>LIVE 成功</h2><p data-f="wintext"></p></div></div>`;
 }
 function roleLabel(p){ const g = S.game; return g.first ? (g.first === p ? '先攻' : '後攻') : p.toUpperCase(); }
@@ -705,6 +800,15 @@ function updatePanel(el, p){
   el.querySelectorAll('[data-cap]').forEach(b => b.disabled = !canCap());
   const lim = s.lim || [];
   q('limn').textContent = lim.length;
+  for (const k of ['vol','noise','a','b','o']){
+    const tile = el.querySelector(`.tile[data-tk="${k}"]`); const cm = capMode.has(p + ':' + k);
+    tile.classList.toggle('capmode', cm);
+    const val = q('t-' + k), sm = q('ts-' + k);
+    if (cm){ val.textContent = capOf(p, k); if (sm) sm.textContent = ''; }
+    else { val.textContent = s[k]; if (sm) sm.textContent = (s[MOD[k]] ? '/' + capOf(p, k) : ''); }
+    val.classList.toggle('full', !cm && k !== 'vol' && s[k] >= capOf(p, k));
+  }
+  q('t-lim').textContent = lim.length;
   q('limlist').innerHTML = lim.length ? lim.map((e,i) => {
     const armedNow = armedLim === p + ':' + i;
     return `<button class="limchip${armedNow ? ' armed' : ''}" data-lim="${i}" ${ro ? 'disabled' : ''}>${IC.lim}<span>${armedNow ? 'もう一度押すと取り消し' : esc(e.n || 'LIMITED')}</span></button>`;
@@ -726,7 +830,7 @@ function updateMini(p){
       <span class="st o" aria-label="魔力Ω">${IC.o}${s.o}${s.mo ? `<small>/${capOf(p,'o')}</small>` : ''}</span>
       ${(s.lim||[]).length ? `<span class="st" aria-label="LIMITED使用数">${IC.lim}${s.lim.length}</span>` : ''}
     </span>
-    <span class="chip">⇅ 切替</span>
+    <span class="chip swap">⇅<span class="t"> 切替</span></span>
     <span class="volbar"><i style="width:${s.vol*10}%"></i></span>`;
 }
 
@@ -744,6 +848,7 @@ function render(){
   app.classList.toggle('view-equal', viewMode === 'equal');
   app.classList.toggle('flip', $('flip').checked);
   app.classList.toggle('compact', compact);
+  document.body.classList.toggle('compact-body', compact);
   $('compactbtn').setAttribute('aria-pressed', String(compact));
   document.querySelectorAll('.sec').forEach(s => {
     const c = collapsed.has(s.dataset.sec); s.classList.toggle('closed', c);
@@ -829,6 +934,17 @@ document.addEventListener('click', e => {
     if (!canEdit(p)){ toast('相手の値は操作できません'); return; }
     if (b.dataset.act === 'adj') adjust(p, b.dataset.k, +b.dataset.d); else setVal(p, b.dataset.k, +b.dataset.v);
     return;
+  }
+  if (b.dataset.capt){
+    if (!canCap()){ toast('観戦中は操作できません'); return; }
+    const key = b.closest('.player').dataset.p + ':' + b.dataset.capt;
+    if (capMode.has(key)) capMode.delete(key); else { capMode.add(key); toast('上限の変更モード。もう一度アイコンを押すと戻ります'); }
+    render(); return;
+  }
+  if (b.dataset.limquick){
+    const p = b.closest('.player').dataset.p;
+    if (!canEdit(p)){ toast('相手の値は操作できません'); return; }
+    return useLimited(p, '');
   }
   if (b.dataset.cap){
     if (!canCap()){ toast('観戦中は操作できません'); return; }
