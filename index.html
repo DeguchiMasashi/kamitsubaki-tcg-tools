@@ -196,6 +196,27 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact .board{gap:8px}
 .compact .phead .pname{font-size:17px}
 
+.ic{width:22px;height:22px;flex:0 0 auto;display:inline-block;vertical-align:middle}
+.sec-head .lbl{display:flex;align-items:center;gap:8px}
+.mname .ic{width:30px;height:30px}
+.mini .st{display:inline-flex;align-items:center;gap:3px}
+.mini .st .ic{width:17px;height:17px}
+.sum-closed .ic{width:20px;height:20px}
+.sum-closed>span{display:inline-flex;align-items:center;gap:3px}
+.compact .lbl-text{display:none}
+.compact .player .sec[data-sec="vol"],.compact .player .sec[data-sec="noise"]{display:flex;align-items:center;gap:8px}
+.compact .player .sec[data-sec="vol"]>.sec-head,.compact .player .sec[data-sec="noise"]>.sec-head{width:auto;flex:1 1 auto;min-width:0}
+.compact .player .sec[data-sec="vol"].closed>.sec-body,.compact .player .sec[data-sec="noise"].closed>.sec-body{display:none}
+.compact .sec-head .lbl{flex:0 0 auto}
+.compact .player .sec>.sec-body{flex:0 0 auto}
+.compact .sec-body>.row{margin-top:0!important}
+.compact .sec[data-sec="mana"]:not(.closed)>.sec-head{display:none}
+.compact .step.big button{width:52px;height:44px}
+.compact .sec-head .ic{width:26px;height:26px}
+.player.readonly .step,.player.readonly [data-act="adj"]{display:none}
+.player.readonly .vp,.player.readonly .np,.player.readonly .tk{pointer-events:none}
+.player.readonly .pname{border-bottom-color:transparent}
+.chip.ro{border-style:dashed}
 @media (max-width:560px){.brand small{display:none}.pill.offline{display:none}.iconbtn{padding:0 9px}}
 @media (max-width:360px){.compact .mrow .step button{width:36px}}
 @media (max-width:380px){.step button{width:40px;height:42px}.tk{width:22px;height:22px}.mrow{gap:6px}}
@@ -308,6 +329,13 @@ const NAME = {vol:'VOL', noise:'VOLノイズ', a:'魔力α', b:'魔力β', o:'�
 const PH = {draw:'ドロー', act:'アクト', end:'エンド'};
 const PFX = 'kmtbk-livecounter-';
 const other = p => p === 'p1' ? 'p2' : 'p1';
+const tok = (c, g) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="${c}"/><circle cx="12" cy="12" r="8.6" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/><text x="12" y="16.6" text-anchor="middle" font-size="13.5" font-weight="700" fill="#14101f" font-family="Cormorant Garamond,Times New Roman,serif">${g}</text></svg>`;
+const IC = {
+  vol: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="var(--gold)"/><path d="M12 3.6l2.1 5.5 5.9.3-4.6 3.7 1.6 5.7L12 15.6l-5 3.2 1.6-5.7L4 9.4l5.9-.3z" fill="#3a2a0a"/></svg>',
+  noise: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2" fill="#2c2942" stroke="var(--noise)" stroke-width="1.6"/><path d="M8 7l8 8M8 11l7 7M11 6l5 5" stroke="var(--noise)" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  a: tok('var(--alpha)','α'), b: tok('var(--beta)','β'), o: tok('var(--omega)','Ω'),
+};
+const canEdit = p => mode !== 'online' || seat === p;
 const $ = id => document.getElementById(id);
 const store = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
@@ -407,7 +435,10 @@ function startHost(code, resumeState){
   peer.on('connection', c => {
     c.on('open', () => { conns.add(c); try { c.send({t:'s', s:S}); } catch(e){} render(); });
     c.on('data', m => {
+      if (m && m.t === 'h'){ c.seat = (m.seat === 'p1' || m.seat === 'p2') ? m.seat : 'watch'; render(); return; }
       if (!m || m.t !== 'p' || !(m.k in S)) return;
+      if (m.k !== 'game' && m.k !== c.seat){ try { c.send({t:'s', s:S, q:m.q|0}); } catch(e){} return; }
+      if (m.k === 'game' && c.seat !== 'p1' && c.seat !== 'p2') return;
       Object.assign(S[m.k], clean(m.k, m.o)); persist(); broadcast(c, m.q|0); render();
     });
     c.on('close', () => { conns.delete(c); render(); });
@@ -445,7 +476,7 @@ function dial(){
   if (!peer || peer.destroyed || !roomCode) return;
   const c = peer.connect(PFX + roomCode, {reliable:true});
   conn = c;
-  c.on('open', () => { netState = 'connected'; retries = 0; render(); });
+  c.on('open', () => { netState = 'connected'; retries = 0; sendHello(); render(); });
   c.on('data', m => {
     if (!m || m.t !== 's' || !m.s) return;
     const s = defaults();
@@ -457,6 +488,7 @@ function dial(){
   c.on('close', () => { if (conn === c){ netState = 'lost'; render(); scheduleRetry(); } });
   c.on('error', () => {});
 }
+function sendHello(){ if (role === 'guest' && conn && conn.open){ try { conn.send({t:'h', seat}); } catch(e){} } }
 function scheduleRetry(){
   clearTimeout(retryT);
   if (role !== 'guest') return;
@@ -528,10 +560,11 @@ function buildPanel(el){
       <input class="pname" data-f="name" aria-label="プレイヤー名" maxlength="20" enterkeyhint="done">
       <span class="chip role" data-f="role"></span>
       <span class="chip me" data-f="me" hidden>あなた</span>
+      <span class="chip ro" data-f="ro" hidden>閲覧のみ</span>
       <span class="chip turn" data-f="turnchip" hidden>手番</span>
     </div>
     <div class="sec" data-sec="vol">
-      <button class="sec-head"><span class="chev">▾</span><span class="lbl">VOL</span><span class="sum"><span data-f="voln">0</span><small> / 10</small></span></button>
+      <button class="sec-head"><span class="chev">▾</span><span class="lbl">${IC.vol}<span class="lbl-text">VOL</span></span><span class="sum"><span data-f="voln">0</span><small> / 10</small></span></button>
       <div class="sec-body">
       <div class="voltrack">${Array.from({length:10},(_,i)=>`<button class="vp" data-act="set" data-k="vol" data-v="${i+1}" aria-label="VOL ${i+1}">${i+1}</button>`).join('')}</div>
       <div class="row" style="margin-top:8px">
@@ -541,7 +574,7 @@ function buildPanel(el){
       </div>
     </div>
     <div class="sec" data-sec="noise">
-      <button class="sec-head"><span class="chev">▾</span><span class="lbl">VOLノイズ（裏・最大5）</span><span class="sum" style="font-size:24px" data-f="noisen">0</span></button>
+      <button class="sec-head"><span class="chev">▾</span><span class="lbl">${IC.noise}<span class="lbl-text">VOLノイズ（裏・最大5）</span></span><span class="sum" style="font-size:24px" data-f="noisen">0</span></button>
       <div class="sec-body">
       <div class="row" style="margin-top:6px;justify-content:space-between">
         <div class="noise">${Array.from({length:5},(_,i)=>`<button class="np" data-act="set" data-k="noise" data-v="${i+1}" aria-label="ノイズ ${i+1}"></button>`).join('')}</div>
@@ -550,12 +583,12 @@ function buildPanel(el){
       </div>
     </div>
     <div class="sec" data-sec="mana">
-      <button class="sec-head"><span class="chev">▾</span><span class="lbl">魔力（各上限5）</span><span class="sum sum-closed" data-f="manasum"></span></button>
+      <button class="sec-head"><span class="chev">▾</span><span class="lbl"><span class="lbl-text">魔力（各上限5）</span></span><span class="sum sum-closed" data-f="manasum"></span></button>
       <div class="sec-body">
       <div class="mana">
         ${[['a','α'],['b','β'],['o','Ω']].map(([k,g])=>`
         <div class="mrow c-${k}">
-          <span class="mname">${g}</span>
+          <span class="mname" aria-label="魔力${g}">${IC[k]}</span>
           <span class="tokens">${Array.from({length:5},(_,i)=>`<button class="tk" data-act="set" data-k="${k}" data-v="${i+1}" aria-label="魔力${g} ${i+1}"></button>`).join('')}</span>
           <span class="mcount" data-f="${k}n">0</span>
           <span class="step"><button data-act="adj" data-k="${k}" data-d="-1" aria-label="魔力${g}を消費">−</button><button data-act="adj" data-k="${k}" data-d="1" aria-label="魔力${g}を生成">＋</button></span>
@@ -570,7 +603,9 @@ function updatePanel(el, p){
   el.dataset.p = p;
   const s = S[p], g = S.game, q = f => el.querySelector(`[data-f="${f}"]`);
   const nameEl = q('name'); if (document.activeElement !== nameEl) nameEl.value = s.name || '';
-  nameEl.readOnly = mode === 'online' && seat === 'watch';
+  const ro = !canEdit(p);
+  nameEl.readOnly = ro; el.classList.toggle('readonly', ro);
+  q('ro').hidden = !ro;
   q('role').textContent = roleLabel(p);
   q('me').hidden = !(mode === 'online' && seat === p);
   const isTurn = !!(g.first && g.active === p);
@@ -582,7 +617,7 @@ function updatePanel(el, p){
     el.querySelectorAll(`.tk[data-k="${k}"]`).forEach((b,i) => b.classList.toggle('on', i < s[k]));
     const n = q(k + 'n'); n.textContent = s[k]; n.classList.toggle('full', s[k] >= 5);
   }
-  q('manasum').innerHTML = `<span class="a">α${s.a}</span><span class="b">β${s.b}</span><span class="o">Ω${s.o}</span>`;
+  q('manasum').innerHTML = `<span class="a">${IC.a}${s.a}</span><span class="b">${IC.b}${s.b}</span><span class="o">${IC.o}${s.o}</span>`;
   q('win').hidden = s.vol < 10;
   q('wintext').textContent = `${s.name} が VOL 10 点を獲得しました`;
 }
@@ -593,11 +628,11 @@ function updateMini(p){
   el.innerHTML = `<span class="mname">${esc(s.name)}</span>
     <span class="chip role">${roleLabel(p)}</span>${isTurn ? '<span class="chip turn">手番</span>' : ''}${mode === 'online' && seat === p ? '<span class="chip me">あなた</span>' : ''}
     <span class="stats">
-      <span class="st vol"><small>VOL</small>${s.vol}</span>
-      <span class="st"><small>ノイズ</small>${s.noise}</span>
-      <span class="st a"><small>α</small>${s.a}</span>
-      <span class="st b"><small>β</small>${s.b}</span>
-      <span class="st o"><small>Ω</small>${s.o}</span>
+      <span class="st vol" aria-label="VOL">${IC.vol}${s.vol}</span>
+      <span class="st" aria-label="ノイズ">${IC.noise}${s.noise}</span>
+      <span class="st a" aria-label="魔力α">${IC.a}${s.a}</span>
+      <span class="st b" aria-label="魔力β">${IC.b}${s.b}</span>
+      <span class="st o" aria-label="魔力Ω">${IC.o}${s.o}</span>
     </span>
     <span class="chip">⇅ 切替</span>
     <span class="volbar"><i style="width:${s.vol*10}%"></i></span>`;
@@ -657,7 +692,7 @@ function render(){
 
   $('log').innerHTML = (g.log || []).map(e => `<li><time>${esc(e.ts)}</time><span>${esc(e.m)}</span></li>`).join('') || '<li><span>まだ記録はありません</span></li>';
   const bonus = p => { const a = S[p].mull||0, b = S[other(p)].mull||0; return a < b ? `+${b-a}枚` : ''; };
-  $('mull').innerHTML = ['p1','p2'].map(p => `<span>${esc(pn(p))}　<b style="color:var(--gold)">${bonus(p)}</b></span><span class="mcount" style="font-size:22px">${S[p].mull||0}</span><span class="step"><button data-mull="${p}" data-d="-1" aria-label="引き直し -1">−</button><button data-mull="${p}" data-d="1" aria-label="引き直し +1">＋</button></span>`).join('');
+  $('mull').innerHTML = ['p1','p2'].map(p => `<span>${esc(pn(p))}　<b style="color:var(--gold)">${bonus(p)}</b></span><span class="mcount" style="font-size:22px">${S[p].mull||0}</span><span class="step"><button data-mull="${p}" data-d="-1" aria-label="引き直し -1" ${canEdit(p)?"":"disabled"}>−</button><button data-mull="${p}" data-d="1" aria-label="引き直し +1" ${canEdit(p)?"":"disabled"}>＋</button></span>`).join('');
 
   // network UI
   const pill = $('netpill');
@@ -674,7 +709,7 @@ function render(){
     $('linktext').textContent = inviteURL();
     document.querySelectorAll('[data-seat]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.seat === seat)));
     $('roomnote').textContent = role === 'host'
-      ? `あなたがこの対戦のホストです。このページを閉じると対戦が止まります（開き直せば再開できます）。接続中の相手：${conns.size}人`
+      ? `あなたがこの対戦のホストです。このページを閉じると対戦が止まります（開き直せば再開できます）。接続中の相手：${conns.size}人` + ([...conns].some(c => c.seat && c.seat === seat) ? '　⚠ 相手と同じ席を選んでいます。どちらかが席を変えてください。' : '')
       : (netState === 'notfound' ? 'コードが合っているか、作成した人がページを開いたままか確認してください。自動で再試行します。' : 'ホストの端末と直接つながっています。');
   }
   const last = (() => { try { return JSON.parse(store.get('kt-last')); } catch(e){ return null; } })();
@@ -699,20 +734,22 @@ document.addEventListener('click', e => {
   const panel = b.closest('.player');
   if (panel && b.dataset.act){
     const p = panel.dataset.p;
+    if (!canEdit(p)){ toast('相手の値は操作できません'); return; }
     if (b.dataset.act === 'adj') adjust(p, b.dataset.k, +b.dataset.d); else setVal(p, b.dataset.k, +b.dataset.v);
     return;
   }
   if (b.dataset.phase) return setPhase(b.dataset.phase);
   if (b.dataset.first) return chooseFirst(b.dataset.first);
-  if (b.dataset.mull){ const p = b.dataset.mull, v = Math.max(0, (S[p].mull||0) + (+b.dataset.d)); patch(p, {mull:v}); addLog(`${pn(p)}：引き直し ${v}回`); return; }
+  if (b.dataset.mull){ if (!canEdit(b.dataset.mull)){ toast('相手の値は操作できません'); return; } const p = b.dataset.mull, v = Math.max(0, (S[p].mull||0) + (+b.dataset.d)); patch(p, {mull:v}); addLog(`${pn(p)}：引き直し ${v}回`); return; }
   if (b.dataset.seat){
     seat = b.dataset.seat; store.set(role === 'host' ? 'kt-seat-host' : 'kt-seat-guest', seat);
-    if (seat !== 'watch') bigP = seat; render(); return;
+    if (seat !== 'watch') bigP = seat; sendHello(); render(); return;
   }
 });
 document.addEventListener('change', e => {
   if (e.target.classList.contains('pname')){
     const p = e.target.closest('.player').dataset.p;
+    if (!canEdit(p)) return;
     patch(p, {name: e.target.value.trim().slice(0,20) || (p === 'p1' ? 'プレイヤー1' : 'プレイヤー2')});
   }
 });
