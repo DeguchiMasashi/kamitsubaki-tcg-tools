@@ -216,7 +216,6 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .player.readonly .step,.player.readonly [data-act="adj"]{display:none}
 .player.readonly .vp,.player.readonly .np,.player.readonly .tk{pointer-events:none}
 .player.readonly .capstep{display:inline-flex}
-.player.readonly .limadd{display:none}
 .tk.sealed,.np.sealed{opacity:.5;border-style:dashed;pointer-events:none;background:repeating-linear-gradient(135deg,transparent 0 4px,rgba(255,255,255,.12) 4px 5px)}
 .mcount small,.mini .st small,.sec-head .sum small{font-size:.55em;color:var(--dim)}
 .mrow{grid-template-columns:1.6em minmax(0,1fr) auto auto}
@@ -226,19 +225,11 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .capv{font-size:13px;color:var(--muted)} .capv b{font-family:var(--f-num);font-size:22px;color:var(--fg);margin:0 2px}
 .capv small{color:var(--warn);font-size:12px}
 .capsum span{font-size:20px}
-.limlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.limchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--gold-soft);background:var(--bg2);border-radius:999px;padding:4px 12px 4px 6px;font-size:13px;min-height:34px;text-decoration:line-through;text-decoration-color:var(--dim);color:var(--muted)}
-.limchip .ic{width:20px;height:20px}
-.limchip.armed{border-color:var(--bad);color:var(--fg);text-decoration:none}
-.limadd{margin-top:8px;flex-wrap:nowrap}
-.limadd .field{flex:1 1 auto;min-width:0}
 .compact .caps .mname,.compact .capv{font-size:12px}
-.compact .limlist{margin-top:2px}
 .player.readonly .pname{border-bottom-color:transparent}
 .chip.ro{border-style:dashed}
 
 /* ===== 簡潔表示：1画面に収める ===== */
-.ctiles{display:none}
 #artistwrap .short{display:none}
 .compact-body{overflow:hidden;overscroll-behavior:none}
 .wrap.compact{height:100vh;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding-block:8px;gap:8px;overflow:hidden}
@@ -254,26 +245,46 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact .phead{flex-wrap:nowrap}
 .compact .phead .pname{font-size:15px;padding:0;flex:1 1 auto}
 .compact .phead .chip{font-size:10px;padding:1px 6px}
-.compact .ctiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:6px;flex:1 1 auto;min-height:0}
-.tile{display:flex;flex-direction:column;gap:4px;background:var(--bg2);border:1px solid var(--line-soft);border-radius:10px;padding:4px;min-height:0;min-width:0}
-.tile.capmode{border-color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
-.thead{display:flex;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;padding:0;min-height:26px;flex:0 0 auto;font-family:var(--f-num);font-size:26px;font-weight:700;line-height:1;color:var(--fg);font-variant-numeric:tabular-nums}
-.thead small{font-size:.55em;color:var(--dim)}
-.thead .ic{width:22px;height:22px}
-.thead b.full{color:var(--warn)}
-.thead .capl{display:none;font-family:var(--f-body);font-size:11px;font-weight:700;color:var(--warn)}
-.tile.capmode .capl{display:inline}
-.tstep{display:grid;grid-template-columns:1fr 1fr;flex:1 1 auto;min-height:30px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.tstep.one{grid-template-columns:1fr}
-.tstep button{border:0;background:var(--panel);font-size:20px;font-weight:700;min-height:0;padding:0}
+.crows{display:none}
+.compact .crows{display:grid;grid-template-rows:repeat(5,minmax(0,1fr));gap:4px;flex:1 1 auto;min-height:0}
+.crow{display:grid;grid-template-columns:28px minmax(0,1fr) 2.4em auto;align-items:center;gap:6px;min-height:0;border-radius:8px;padding:0 2px}
+.crow.capmode{box-shadow:inset 0 0 0 1.5px var(--warn);background:rgba(242,166,90,.06)}
+.cic{border:0;background:transparent;padding:0;display:grid;place-items:center;height:100%}
+.cic .ic{width:26px;height:26px}
+.cpips{display:flex;gap:3px;align-items:center;min-width:0;height:100%}
+.cp{flex:1 1 0;min-width:0;max-width:32px;max-height:100%;aspect-ratio:1;padding:0;border-radius:50%;background:transparent;display:grid;place-items:center;font-family:var(--f-num);font-size:10px;color:var(--dim);line-height:1}
+.cp-vol{border:1.5px solid var(--gold-soft)}
+.cp-vol.on{background:radial-gradient(circle at 35% 30%,#f7e3a8,var(--gold) 55%,#8a6a2a);border-color:var(--gold);color:#3a2a0a;font-weight:700}
+.cp-tk{border:1.5px solid var(--c);opacity:.4}
+.cp-tk.on{opacity:1;background:radial-gradient(circle at 35% 30%,#fff8,var(--c) 60%);box-shadow:0 0 8px -2px var(--c)}
+.cp-noise{aspect-ratio:3/4;border-radius:3px;border:1px solid var(--line);flex:0 0 auto;height:calc(100% - 4px);max-height:32px;width:auto;max-width:none}
+.cp-noise.on{background:repeating-linear-gradient(135deg,#3b3752 0 4px,#2c2942 4px 8px);border-color:var(--noise)}
+.cp.sealed{opacity:.3;border-style:dashed;pointer-events:none}
+.cnum{font-family:var(--f-num);font-size:22px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
+.cnum small{font-size:.55em;color:var(--dim)}
+.cnum.full{color:var(--warn)}
+.cnum .capl{font-family:var(--f-body);font-size:10px;color:var(--warn);font-weight:700;margin-right:2px}
+.tstep{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:84px;height:100%;min-height:28px;max-height:46px}
+.tstep button{border:0;background:var(--panel);font-size:19px;font-weight:700;min-height:0;padding:0}
 .tstep button:active{background:var(--line)}
 .tstep button+button{border-left:1px solid var(--line)}
-.t-lim .tstep button{font-size:13px}
-.tile .tcap{display:none}
-.tile.capmode .tcap{display:grid}
-.tile.capmode .tstep:not(.tcap){display:none}
-.player.readonly .tstep:not(.tcap){display:none}
-.player.readonly .tile{justify-content:center}
+.crow .tcap{display:none}
+.crow.capmode .tcap{display:grid}
+.crow.capmode .tstep:not(.tcap){display:none}
+.crow.capmode .cp{pointer-events:none}
+.player.readonly .tstep:not(.tcap){visibility:hidden}
+.player.readonly .cp{pointer-events:none}
+@media (max-width:380px){.tstep{width:72px}.crow{gap:4px;grid-template-columns:24px minmax(0,1fr) 2.2em auto}.cic .ic{width:22px;height:22px}}
+/* LIMITED: 使用前 / 使用後 */
+.limtog{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--gold);background:linear-gradient(180deg,#3a2f17,#2a2212);color:var(--gold);border-radius:999px;padding:3px 10px 3px 4px;font-size:12px;font-weight:700;min-height:30px;flex:0 0 auto;letter-spacing:.04em}
+.limtog .ic{width:22px;height:22px}
+.limtog.used{border-color:var(--line);background:var(--bg2);color:var(--dim);font-weight:500}
+.limtog.used .ic{filter:grayscale(1);opacity:.5}
+.limtog.armed{border-color:var(--bad);color:var(--fg)}
+.player.readonly .limtog{pointer-events:none}
+.compact .limtog{min-height:26px;font-size:11px;padding:2px 8px 2px 3px}
+.compact .limtog .ic{width:18px;height:18px}
+.compact .limtog .lt-pre{display:none}
 .compact #ctrl{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"turn die end" "ph ph art";gap:6px;align-items:center;padding:8px}
 .compact #turnline{grid-area:turn;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .compact #turnline small{font-size:11px}
@@ -293,6 +304,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact .mini .mname{font-size:13px;max-width:6em}
 .compact .mini .stats{flex-wrap:nowrap;gap:8px;overflow:hidden}
 .compact .mini .st{font-size:19px}
+.mini .st.lim small{font-size:11px;color:var(--gold);font-family:var(--f-body)} .mini .st.lim.used .ic{filter:grayscale(1);opacity:.5} .mini .st.lim.used small{color:var(--dim)}
 .compact .mini .chip{font-size:10px;padding:1px 6px}
 .compact .mini .chip.role,.compact .mini .swap .t{display:none}
 .compact .mini .mname{flex:0 1 auto;min-width:2.5em}
@@ -431,15 +443,15 @@ const store = {
 function defaults(){
   return {
     game:{turn:1, active:'p1', phase:'draw', artist:false, first:null, log:[], dice:null, fp:null},
-    p1:{name:'プレイヤー1', vol:0, noise:0, a:0, b:0, o:0, mull:0, ma:0, mb:0, mo:0, mn:0, lim:[]},
-    p2:{name:'プレイヤー2', vol:0, noise:0, a:0, b:0, o:0, mull:0, ma:0, mb:0, mo:0, mn:0, lim:[]},
+    p1:{name:'プレイヤー1', vol:0, noise:0, a:0, b:0, o:0, mull:0, ma:0, mb:0, mo:0, mn:0, lu:false},
+    p2:{name:'プレイヤー2', vol:0, noise:0, a:0, b:0, o:0, mull:0, ma:0, mb:0, mo:0, mn:0, lu:false},
   };
 }
 function loadJSON(k){ try { const s = JSON.parse(store.get(k)); if (s && s.game && s.p1 && s.p2) return s; } catch(e){} return null; }
 
 // ---------- sanitize incoming data ----------
 const GAME_KEYS = ['turn','active','phase','artist','first','log','dice','fp'];
-const P_KEYS = ['name','vol','noise','a','b','o','mull','ma','mb','mo','mn','lim'];
+const P_KEYS = ['name','vol','noise','a','b','o','mull','ma','mb','mo','mn','lu'];
 const MOD = {a:'ma', b:'mb', o:'mo', noise:'mn'};
 const MOD_KEYS = ['ma','mb','mo','mn'];
 function clean(k, o){
@@ -460,7 +472,7 @@ function clean(k, o){
     for (const key of P_KEYS) if (key in o){
       const v = o[key];
       if (key === 'name') out.name = String(v || '').slice(0,20);
-      else if (key === 'lim'){ if (Array.isArray(v)) out.lim = v.slice(0,10).map(e => ({n:String(e && e.n || '').slice(0,30)})); }
+      else if (key === 'lu') out.lu = !!v;
       else if (MOD_KEYS.includes(key)){ if (Number.isInteger(v)) out[key] = Math.max(-5, Math.min(5, v)); }
       else if (Number.isInteger(v)) out[key] = Math.max(0, Math.min(key === 'mull' ? 99 : CAP[key], v));
     }
@@ -626,15 +638,10 @@ function setCap(p, k, d){
 }
 let armedLim = null, armedLimT = null;
 const capMode = new Set();
-function useLimited(p, name){
-  const lim = (S[p].lim || []).slice(); if (lim.length >= 10){ toast('記録できるのは10枚までです'); return; }
-  lim.push({n: name}); patch(p, {lim}); addLog(`${pn(p)}：LIMITED「${name || 'カード'}」を使用`);
-}
-function tapLimited(p, i, chip){
-  const key = p + ':' + i;
-  if (armedLim !== key){ armedLim = key; clearTimeout(armedLimT); armedLimT = setTimeout(() => { armedLim = null; render(); }, 3000); render(); return; }
-  armedLim = null; const lim = (S[p].lim || []).slice(); const [r] = lim.splice(i, 1);
-  patch(p, {lim}); addLog(`${pn(p)}：LIMITED「${r && r.n || 'カード'}」の使用を取り消し`);
+function toggleLimited(p){
+  if (!S[p].lu){ patch(p, {lu:true}); addLog(`${pn(p)}：LIMITEDを使用`); return; }
+  if (armedLim !== p){ armedLim = p; clearTimeout(armedLimT); armedLimT = setTimeout(() => { armedLim = null; render(); }, 3000); render(); return; }
+  armedLim = null; patch(p, {lu:false}); addLog(`${pn(p)}：LIMITEDを使用前に戻した`);
 }
 function setPhase(ph){ if (S.game.phase === ph) return; patch('game', {phase: ph}); addLog(`${pn(S.game.active)}：${PH[ph]}フェーズ`); }
 function endTurn(){
@@ -680,6 +687,7 @@ function buildPanel(el){
       <span class="chip me" data-f="me" hidden>あなた</span>
       <span class="chip ro" data-f="ro" hidden>閲覧のみ</span>
       <span class="chip turn" data-f="turnchip" hidden>手番</span>
+      <button class="limtog" data-limtog="1" data-f="limtog">${IC.lim}<span class="lt-pre">LIMITED </span><span data-f="limst">使用前</span></button>
     </div>
     <div class="sec" data-sec="vol">
       <button class="sec-head"><span class="chev">▾</span><span class="lbl">${IC.vol}<span class="lbl-text">VOL</span></span><span class="sum"><span data-f="voln">0</span><small> / 10</small></span></button>
@@ -714,16 +722,6 @@ function buildPanel(el){
       </div>
       </div>
     </div>
-    <div class="sec" data-sec="lim">
-      <button class="sec-head"><span class="chev">▾</span><span class="lbl">${IC.lim}<span class="lbl-text">LIMITED（対戦中1回）</span></span><span class="sum" style="font-size:24px" data-f="limn">0</span></button>
-      <div class="sec-body">
-        <div class="limlist" data-f="limlist"></div>
-        <div class="row limadd">
-          <input class="field limname" data-f="limname" placeholder="カード名（任意）" maxlength="30" enterkeyhint="done" aria-label="LIMITEDカード名">
-          <button class="btn" data-limadd="1">使用した</button>
-        </div>
-      </div>
-    </div>
     <div class="sec" data-sec="cap">
       <button class="sec-head"><span class="chev">▾</span><span class="lbl"><span class="lbl-text">上限の変更</span></span><span class="sum sum-closed capsum" data-f="capsum"></span></button>
       <div class="sec-body">
@@ -738,35 +736,15 @@ function buildPanel(el){
         <p class="note">相手のカード効果で変わることが多いので、どちらのプレイヤーも操作できます。効果が重複したら、その分だけ下げてください。上限を超えた分は自動で消失します。</p>
       </div>
     </div>
-    <div class="ctiles">
-        <div class="tile t-vol" data-tk="vol">
-          <div class="thead">${IC.vol}<b data-f="t-vol">0</b><small>/10</small></div>
-          <span class="tstep"><button data-act="adj" data-k="vol" data-d="-1" aria-label="VOL -1">−</button><button data-act="adj" data-k="vol" data-d="1" aria-label="VOL +1">＋</button></span>
-        </div>
-        <div class="tile c-noise" data-tk="noise">
-          <button class="thead" data-capt="noise" aria-label="VOLノイズ（タップで上限を変更）">${IC.noise}<span class="capl">上限</span><b data-f="t-noise">0</b><small data-f="ts-noise"></small></button>
-          <span class="tstep"><button data-act="adj" data-k="noise" data-d="-1" aria-label="VOLノイズ -1">−</button><button data-act="adj" data-k="noise" data-d="1" aria-label="VOLノイズ +1">＋</button></span>
-          <span class="tstep tcap"><button data-cap="noise" data-d="-1" aria-label="VOLノイズの上限 -1">−</button><button data-cap="noise" data-d="1" aria-label="VOLノイズの上限 +1">＋</button></span>
-        </div>
-        <div class="tile c-a" data-tk="a">
-          <button class="thead" data-capt="a" aria-label="魔力α（タップで上限を変更）">${IC.a}<span class="capl">上限</span><b data-f="t-a">0</b><small data-f="ts-a"></small></button>
-          <span class="tstep"><button data-act="adj" data-k="a" data-d="-1" aria-label="魔力α -1">−</button><button data-act="adj" data-k="a" data-d="1" aria-label="魔力α +1">＋</button></span>
-          <span class="tstep tcap"><button data-cap="a" data-d="-1" aria-label="魔力αの上限 -1">−</button><button data-cap="a" data-d="1" aria-label="魔力αの上限 +1">＋</button></span>
-        </div>
-        <div class="tile c-b" data-tk="b">
-          <button class="thead" data-capt="b" aria-label="魔力β（タップで上限を変更）">${IC.b}<span class="capl">上限</span><b data-f="t-b">0</b><small data-f="ts-b"></small></button>
-          <span class="tstep"><button data-act="adj" data-k="b" data-d="-1" aria-label="魔力β -1">−</button><button data-act="adj" data-k="b" data-d="1" aria-label="魔力β +1">＋</button></span>
-          <span class="tstep tcap"><button data-cap="b" data-d="-1" aria-label="魔力βの上限 -1">−</button><button data-cap="b" data-d="1" aria-label="魔力βの上限 +1">＋</button></span>
-        </div>
-        <div class="tile c-o" data-tk="o">
-          <button class="thead" data-capt="o" aria-label="魔力Ω（タップで上限を変更）">${IC.o}<span class="capl">上限</span><b data-f="t-o">0</b><small data-f="ts-o"></small></button>
-          <span class="tstep"><button data-act="adj" data-k="o" data-d="-1" aria-label="魔力Ω -1">−</button><button data-act="adj" data-k="o" data-d="1" aria-label="魔力Ω +1">＋</button></span>
-          <span class="tstep tcap"><button data-cap="o" data-d="-1" aria-label="魔力Ωの上限 -1">−</button><button data-cap="o" data-d="1" aria-label="魔力Ωの上限 +1">＋</button></span>
-        </div>
-        <div class="tile t-lim" data-tk="lim">
-          <div class="thead">${IC.lim}<b data-f="t-lim">0</b></div>
-          <span class="tstep one"><button data-limquick="1" aria-label="LIMITEDを使用した">使用</button></span>
-        </div>
+    <div class="crows">
+      ${[['vol','VOL',10],['noise','VOLノイズ',5],['a','魔力α',5],['b','魔力β',5],['o','魔力Ω',5]].map(([k,g,n])=>`
+      <div class="crow c-${k}" data-tk="${k}">
+        ${k === 'vol' ? `<span class="cic">${IC.vol}</span>` : `<button class="cic" data-capt="${k}" aria-label="${g}（タップで上限を変更）">${IC[k]}</button>`}
+        <div class="cpips">${Array.from({length:n},(_,i)=>`<button class="cp ${k==='vol'?'cp-vol':k==='noise'?'cp-noise':'cp-tk'}" data-act="set" data-k="${k}" data-v="${i+1}" aria-label="${g} ${i+1}">${k==='vol'?i+1:''}</button>`).join('')}</div>
+        <span class="cnum" data-f="t-${k}">0</span>
+        <span class="tstep"><button data-act="adj" data-k="${k}" data-d="-1" aria-label="${g} -1">−</button><button data-act="adj" data-k="${k}" data-d="1" aria-label="${g} +1">＋</button></span>
+        ${k === 'vol' ? '' : `<span class="tstep tcap"><button data-cap="${k}" data-d="-1" aria-label="${g}の上限 -1">−</button><button data-cap="${k}" data-d="1" aria-label="${g}の上限 +1">＋</button></span>`}
+      </div>`).join('')}
     </div>
     <div class="win" data-f="win" hidden><div><h2>LIVE 成功</h2><p data-f="wintext"></p></div></div>`;
 }
@@ -798,21 +776,18 @@ function updatePanel(el, p){
     const d = s[MOD[k]] || 0; q('capd-' + k).textContent = d ? `（${d > 0 ? '+' : ''}${d}）` : '';
   }
   el.querySelectorAll('[data-cap]').forEach(b => b.disabled = !canCap());
-  const lim = s.lim || [];
-  q('limn').textContent = lim.length;
+  const lt = q('limtog'), armedNow = armedLim === p;
+  lt.classList.toggle('used', !!s.lu); lt.classList.toggle('armed', armedNow);
+  q('limst').textContent = armedNow ? 'もう一度で使用前に' : (s.lu ? '使用後' : '使用前');
+  lt.setAttribute('aria-pressed', String(!!s.lu));
   for (const k of ['vol','noise','a','b','o']){
-    const tile = el.querySelector(`.tile[data-tk="${k}"]`); const cm = capMode.has(p + ':' + k);
-    tile.classList.toggle('capmode', cm);
-    const val = q('t-' + k), sm = q('ts-' + k);
-    if (cm){ val.textContent = capOf(p, k); if (sm) sm.textContent = ''; }
-    else { val.textContent = s[k]; if (sm) sm.textContent = (s[MOD[k]] ? '/' + capOf(p, k) : ''); }
-    val.classList.toggle('full', !cm && k !== 'vol' && s[k] >= capOf(p, k));
+    const row = el.querySelector(`.crow[data-tk="${k}"]`); const cm = capMode.has(p + ':' + k), cap = capOf(p, k);
+    row.classList.toggle('capmode', cm);
+    row.querySelectorAll('.cp').forEach((b,i) => { b.classList.toggle('on', i < s[k]); b.classList.toggle('sealed', k !== 'vol' && i >= cap); });
+    const n = q('t-' + k);
+    n.innerHTML = cm ? `<span class="capl">上限</span>${cap}` : s[k] + (k !== 'vol' && s[MOD[k]] ? `<small>/${cap}</small>` : '');
+    n.classList.toggle('full', !cm && k !== 'vol' && s[k] >= cap);
   }
-  q('t-lim').textContent = lim.length;
-  q('limlist').innerHTML = lim.length ? lim.map((e,i) => {
-    const armedNow = armedLim === p + ':' + i;
-    return `<button class="limchip${armedNow ? ' armed' : ''}" data-lim="${i}" ${ro ? 'disabled' : ''}>${IC.lim}<span>${armedNow ? 'もう一度押すと取り消し' : esc(e.n || 'LIMITED')}</span></button>`;
-  }).join('') : '<span class="note">まだ使っていません</span>';
   q('win').hidden = s.vol < 10;
   q('wintext').textContent = `${s.name} が VOL 10 点を獲得しました`;
 }
@@ -828,7 +803,7 @@ function updateMini(p){
       <span class="st a" aria-label="魔力α">${IC.a}${s.a}${s.ma ? `<small>/${capOf(p,'a')}</small>` : ''}</span>
       <span class="st b" aria-label="魔力β">${IC.b}${s.b}${s.mb ? `<small>/${capOf(p,'b')}</small>` : ''}</span>
       <span class="st o" aria-label="魔力Ω">${IC.o}${s.o}${s.mo ? `<small>/${capOf(p,'o')}</small>` : ''}</span>
-      ${(s.lim||[]).length ? `<span class="st" aria-label="LIMITED使用数">${IC.lim}${s.lim.length}</span>` : ''}
+      <span class="st lim${s.lu ? ' used' : ''}" aria-label="LIMITED ${s.lu ? '使用後' : '使用前'}">${IC.lim}<small>${s.lu ? '済' : '未'}</small></span>
     </span>
     <span class="chip swap">⇅<span class="t"> 切替</span></span>
     <span class="volbar"><i style="width:${s.vol*10}%"></i></span>`;
@@ -941,24 +916,14 @@ document.addEventListener('click', e => {
     if (capMode.has(key)) capMode.delete(key); else { capMode.add(key); toast('上限の変更モード。もう一度アイコンを押すと戻ります'); }
     render(); return;
   }
-  if (b.dataset.limquick){
+  if (b.dataset.limtog){
     const p = b.closest('.player').dataset.p;
     if (!canEdit(p)){ toast('相手の値は操作できません'); return; }
-    return useLimited(p, '');
+    return toggleLimited(p);
   }
   if (b.dataset.cap){
     if (!canCap()){ toast('観戦中は操作できません'); return; }
     return setCap(b.closest('.player').dataset.p, b.dataset.cap, +b.dataset.d);
-  }
-  if (b.dataset.limadd){
-    const pl = b.closest('.player'), p = pl.dataset.p;
-    if (!canEdit(p)){ toast('相手の値は操作できません'); return; }
-    const inp = pl.querySelector('.limname'); const name = inp.value.trim().slice(0,30); inp.value = '';
-    return useLimited(p, name);
-  }
-  if (b.dataset.lim !== undefined && b.classList.contains('limchip')){
-    const p = b.closest('.player').dataset.p; if (!canEdit(p)) return;
-    return tapLimited(p, +b.dataset.lim, b);
   }
   if (b.dataset.phase) return setPhase(b.dataset.phase);
   if (b.dataset.first) return chooseFirst(b.dataset.first);
@@ -977,7 +942,6 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.classList.contains('pname')) e.target.blur();
-  if (e.key === 'Enter' && e.target.classList.contains('limname')){ e.preventDefault(); e.target.closest('.player').querySelector('[data-limadd]').click(); }
 });
 const swapBig = () => { bigP = other(bigP); render(); };
 $('mini').addEventListener('click', swapBig);
