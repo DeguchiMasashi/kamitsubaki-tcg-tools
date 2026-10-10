@@ -315,6 +315,50 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 @media (max-width:560px){.brand small{display:none}.pill.offline{display:none}.iconbtn{padding:0 9px}}
 @media (max-width:360px){.compact .mrow .step button{width:36px}}
 @media (max-width:380px){.step button{width:40px;height:42px}.tk{width:22px;height:22px}.mrow{gap:6px}}
+/* PC（横並び）での簡潔表示 */
+@media (min-width:1000px){
+  .flip.view-equal #panel-top{transform:none}
+  .compact .board{align-content:center}
+  .view-equal.compact .board{grid-template-rows:auto auto}
+  .view-focus.compact .board{grid-template-rows:auto auto auto}
+  .view-equal.compact .board{grid-template-columns:minmax(0,1fr) 300px minmax(0,1fr)}
+  .view-focus.compact .board{grid-template-columns:minmax(0,1fr) 320px}
+  .compact .player{align-self:start;padding:14px 16px;gap:12px;overflow:visible}
+  .compact .phead .pname{font-size:19px}
+  .compact .phead .chip{font-size:11px;padding:2px 8px}
+  .compact .limtog{min-height:30px;font-size:12px;padding:3px 10px 3px 4px}
+  .compact .limtog .ic{width:22px;height:22px}
+  .compact .limtog .lt-pre{display:inline}
+  .compact .crows{--pip:clamp(26px,5.6vh,56px);flex:0 0 auto;grid-template-rows:none;grid-auto-rows:auto;gap:12px}
+  .crow{grid-template-columns:36px minmax(0,1fr) 2.6em auto;gap:12px;padding:4px 6px}
+  .cic .ic{width:32px;height:32px}
+  .cpips{display:grid;grid-template-columns:repeat(5,minmax(0,var(--pip)));gap:8px;height:auto;justify-content:start;align-items:center}
+  .cp{width:100%;max-width:none;max-height:none}
+  .cp-vol{font-size:clamp(10px,1.4vh,14px);border-width:2px}
+  .cp-tk{border-width:2px}
+  .cp-noise{width:76%;height:auto;max-height:none;justify-self:center;aspect-ratio:3/4}
+  .cnum{font-size:32px}
+  .tstep{width:112px;height:46px;max-height:none}
+  .tstep button{font-size:22px}
+  .compact #ctrl{grid-template-areas:"turn turn turn" "die judge end" "ph ph ph" "art art art";grid-template-columns:auto minmax(0,1fr) auto;padding:12px;gap:10px}
+  .compact #turnline{font-size:17px;white-space:normal}
+  .compact .die{width:52px;height:52px;font-size:32px}
+  .compact .judge{display:flex;grid-area:judge}
+  .compact .phases button{min-height:42px;font-size:14px}
+  .compact #artistwrap .long{display:inline}
+  .compact #artistwrap .short{display:none}
+}
+@media (min-width:1000px){
+  .view-focus.compact .crows{--pip:clamp(30px,6.6vh,64px)}
+  .view-focus.compact .crow{grid-template-columns:36px auto 3em auto;justify-content:start;column-gap:18px}
+}
+@media (min-width:1000px) and (max-width:1250px){
+  .view-equal.compact .board{grid-template-columns:minmax(0,1fr) 260px minmax(0,1fr)}
+  .crow{grid-template-columns:28px minmax(0,1fr) 2.2em auto;gap:8px}
+  .cic .ic{width:26px;height:26px}
+  .tstep{width:88px;height:40px}
+  .cpips{gap:5px}
+}
 </style>
 </head>
 <body>
