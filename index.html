@@ -42,9 +42,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .wrap{max-width:1280px;margin:0 auto;padding-block:10px 40px;display:flex;flex-direction:column;gap:10px}
 
 /* top bar */
-.top{display:flex;align-items:center;gap:10px;justify-content:space-between}
-.brand{display:flex;align-items:baseline;gap:8px;min-width:0}
-.brand h1{font-family:var(--f-disp);font-weight:800;font-size:clamp(17px,4.6vw,22px);margin:0;letter-spacing:.08em;white-space:nowrap}
+.top{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:8px;min-width:0;flex:1 1 auto;overflow:hidden}
+.brand h1{font-family:var(--f-disp);font-weight:800;font-size:clamp(17px,4.6vw,22px);margin:0;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .brand small{color:var(--muted);font-size:10px;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}
 .topr{display:flex;gap:6px;align-items:center;flex:0 0 auto}
 .pill{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);white-space:nowrap;background:var(--bg2)}
@@ -164,7 +164,40 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2b2342;border:1px solid var(--warn);color:var(--fg);padding:9px 14px;border-radius:10px;font-size:13px;z-index:10;width:max-content;max-width:calc(100% - 32px)}
 .foot{font-size:11px;color:var(--dim);text-align:center}
 .foot a{color:var(--muted)}
-@media (max-width:560px){.brand small{display:none}}
+/* collapsible sections */
+.sec-head{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;padding:0;text-align:left;color:var(--muted);font-size:11px;letter-spacing:.15em;min-height:32px}
+.sec-head .lbl{flex:1 1 auto;min-width:0}
+.sec-head .sum{font-family:var(--f-num);font-size:32px;line-height:1;color:var(--fg);letter-spacing:0;font-variant-numeric:tabular-nums;font-weight:700}
+.sec-head .sum small{font-size:15px;color:var(--dim)}
+.sec-head .chev{display:inline-block;width:14px;flex:0 0 auto;color:var(--dim);font-size:12px;letter-spacing:0;transition:transform .15s}
+.sec.closed .sec-head .chev{transform:rotate(-90deg)}
+.sec.closed>.sec-body{display:none}
+.sec .sum-closed{display:none}
+.sec.closed .sum-closed{display:inline-flex;gap:10px;font-size:24px}
+.sum-closed .a{color:var(--alpha)} .sum-closed .b{color:var(--beta)} .sum-closed .o{color:var(--omega)}
+.card.sec{gap:0} .card.sec>.sec-body{margin-top:8px;display:flex;flex-direction:column;gap:10px}
+.card.sec.closed>.sec-body{display:none}
+.card .sec-head{letter-spacing:.2em}
+#hintsec .sec-head{min-height:26px}
+.iconbtn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--ink);font-weight:700}
+@media (prefers-reduced-motion:reduce){.sec-head .chev{transition:none}}
+
+/* 簡潔表示：対戦中に必要な操作だけ */
+.compact .player{gap:6px;padding:10px}
+.compact .voltrack,.compact .noise,.compact .tokens,.compact #hintsec,.compact #logcard,.compact #setupcard,.compact .foot{display:none!important}
+.compact .sec-head .sum{font-size:28px}
+.compact .sec-body>.row{margin-top:4px!important}
+.compact .mana{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.compact .mrow{grid-template-columns:auto auto;grid-template-areas:"n c" "s s";justify-content:center;justify-items:center;gap:2px 10px;background:var(--bg2);border:1px solid var(--line-soft);border-radius:10px;padding:6px 4px}
+.compact .mrow .mname{grid-area:n} .compact .mrow .mcount{grid-area:c} .compact .mrow .step{grid-area:s}
+.compact .mrow .step button{width:42px;height:42px}
+.compact .card{padding:10px;gap:8px}
+.compact .turnline{font-size:16px}
+.compact .board{gap:8px}
+.compact .phead .pname{font-size:17px}
+
+@media (max-width:560px){.brand small{display:none}.pill.offline{display:none}.iconbtn{padding:0 9px}}
+@media (max-width:360px){.compact .mrow .step button{width:36px}}
 @media (max-width:380px){.step button{width:40px;height:42px}.tk{width:22px;height:22px}.mrow{gap:6px}}
 </style>
 </head>
@@ -174,6 +207,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
     <div class="brand"><h1>神椿 LIVEカウンター</h1><small>Kamitsubaki TCG</small></div>
     <div class="topr">
       <span class="pill" id="netpill"><span class="dot"></span>オフライン</span>
+      <button class="iconbtn" id="compactbtn" aria-pressed="false" title="対戦中の簡潔表示">簡潔</button>
       <button class="iconbtn" id="setbtn" aria-expanded="false" aria-controls="settings">設定</button>
     </div>
   </header>
@@ -227,7 +261,10 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
       <div class="phases" role="group" aria-label="フェーズ">
         <button data-phase="draw">ドロー</button><button data-phase="act">アクト</button><button data-phase="end">エンド</button>
       </div>
-      <ul class="hint" id="hint"></ul>
+      <div class="sec" data-sec="hint" id="hintsec">
+        <button class="sec-head"><span class="chev">▾</span><span class="lbl">このフェーズでやること</span></button>
+        <div class="sec-body"><ul class="hint" id="hint"></ul></div>
+      </div>
       <label class="check"><input type="checkbox" id="artist"> 手札からArtistを出した（1ターン1枚）</label>
       <div class="ctrlrow">
         <button class="die" id="die" aria-label="サイコロを振る">–</button>
@@ -237,21 +274,24 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
     </section>
     <section class="player" id="panel-bottom"></section>
     <div class="more" id="more">
-      <div class="card" id="fpcard">
-        <h3>先攻・後攻</h3>
-        <div class="row"><button class="btn" id="decide">サイコロで決める</button><span class="note">大きい目のプレイヤーが選びます</span></div>
-        <div class="row" id="fpchoose" hidden></div>
+      <div class="card sec" id="fpcard" data-sec="fp">
+        <button class="sec-head"><span class="chev">▾</span><span class="lbl">先攻・後攻</span></button>
+        <div class="sec-body">
+          <div class="row"><button class="btn" id="decide">サイコロで決める</button><span class="note">大きい目のプレイヤーが選びます</span></div>
+          <div class="row" id="fpchoose" hidden></div>
+        </div>
       </div>
-      <div class="card"><h3>ログ</h3><ul class="log" id="log"></ul></div>
-      <div class="card">
-        <details>
-          <summary>準備・リセット</summary>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
-            <p class="note">手札の引き直し回数（単体で出せるArtistがいない場合）。少ない側は差分だけ追加で引けます。</p>
-            <div class="mull" id="mull"></div>
-            <button class="btn danger" id="reset">対戦をリセット</button>
-          </div>
-        </details>
+      <div class="card sec" id="logcard" data-sec="log">
+        <button class="sec-head"><span class="chev">▾</span><span class="lbl">ログ</span></button>
+        <div class="sec-body"><ul class="log" id="log"></ul></div>
+      </div>
+      <div class="card sec" id="setupcard" data-sec="setup">
+        <button class="sec-head"><span class="chev">▾</span><span class="lbl">準備・リセット</span></button>
+        <div class="sec-body">
+          <p class="note">手札の引き直し回数（単体で出せるArtistがいない場合）。少ない側は差分だけ追加で引けます。</p>
+          <div class="mull" id="mull"></div>
+          <button class="btn danger" id="reset">対戦をリセット</button>
+        </div>
       </div>
       <p class="foot">ルールは <a href="https://tcg.kamitsubaki.jp/" target="_blank" rel="noopener">公式サイト</a> を参照。非公式のファンメイドツールです。</p>
     </div>
@@ -322,6 +362,8 @@ let netState = 'idle';          // idle | connecting | hosting | connected | los
 let seq = 0, unacked = [], retries = 0, retryT = null;
 let bigP = 'p1';
 let viewMode = store.get('kt-view') || 'focus';
+let compact = store.get('kt-compact') === '1';
+let collapsed = (() => { try { const v = JSON.parse(store.get('kt-collapsed')); if (Array.isArray(v)) return new Set(v); } catch(e){} return new Set(['setup']); })();
 
 function persist(){
   if (mode === 'offline') store.set('kt-offline', JSON.stringify(S));
@@ -488,23 +530,28 @@ function buildPanel(el){
       <span class="chip me" data-f="me" hidden>あなた</span>
       <span class="chip turn" data-f="turnchip" hidden>手番</span>
     </div>
-    <div>
-      <div class="sec-label"><span>VOL</span><span class="num"><span data-f="voln">0</span><small> / 10</small></span></div>
+    <div class="sec" data-sec="vol">
+      <button class="sec-head"><span class="chev">▾</span><span class="lbl">VOL</span><span class="sum"><span data-f="voln">0</span><small> / 10</small></span></button>
+      <div class="sec-body">
       <div class="voltrack">${Array.from({length:10},(_,i)=>`<button class="vp" data-act="set" data-k="vol" data-v="${i+1}" aria-label="VOL ${i+1}">${i+1}</button>`).join('')}</div>
       <div class="row" style="margin-top:8px">
         <span class="step big"><button data-act="adj" data-k="vol" data-d="-1" aria-label="VOL -1">−</button><button data-act="adj" data-k="vol" data-d="1" aria-label="VOL +1">＋</button></span>
         <span class="step"><button class="txt" data-act="adj" data-k="vol" data-d="2" aria-label="VOL +2">+2</button></span>
       </div>
+      </div>
     </div>
-    <div>
-      <div class="sec-label"><span>VOLノイズ（裏・最大5）</span><span class="num" style="font-size:24px" data-f="noisen">0</span></div>
+    <div class="sec" data-sec="noise">
+      <button class="sec-head"><span class="chev">▾</span><span class="lbl">VOLノイズ（裏・最大5）</span><span class="sum" style="font-size:24px" data-f="noisen">0</span></button>
+      <div class="sec-body">
       <div class="row" style="margin-top:6px;justify-content:space-between">
         <div class="noise">${Array.from({length:5},(_,i)=>`<button class="np" data-act="set" data-k="noise" data-v="${i+1}" aria-label="ノイズ ${i+1}"></button>`).join('')}</div>
         <span class="step"><button data-act="adj" data-k="noise" data-d="-1" aria-label="ノイズ -1">−</button><button data-act="adj" data-k="noise" data-d="1" aria-label="ノイズ +1">＋</button></span>
       </div>
+      </div>
     </div>
-    <div>
-      <div class="sec-label"><span>魔力（各上限5）</span></div>
+    <div class="sec" data-sec="mana">
+      <button class="sec-head"><span class="chev">▾</span><span class="lbl">魔力（各上限5）</span><span class="sum sum-closed" data-f="manasum"></span></button>
+      <div class="sec-body">
       <div class="mana">
         ${[['a','α'],['b','β'],['o','Ω']].map(([k,g])=>`
         <div class="mrow c-${k}">
@@ -513,6 +560,7 @@ function buildPanel(el){
           <span class="mcount" data-f="${k}n">0</span>
           <span class="step"><button data-act="adj" data-k="${k}" data-d="-1" aria-label="魔力${g}を消費">−</button><button data-act="adj" data-k="${k}" data-d="1" aria-label="魔力${g}を生成">＋</button></span>
         </div>`).join('')}
+      </div>
       </div>
     </div>
     <div class="win" data-f="win" hidden><div><h2>LIVE 成功</h2><p data-f="wintext"></p></div></div>`;
@@ -534,6 +582,7 @@ function updatePanel(el, p){
     el.querySelectorAll(`.tk[data-k="${k}"]`).forEach((b,i) => b.classList.toggle('on', i < s[k]));
     const n = q(k + 'n'); n.textContent = s[k]; n.classList.toggle('full', s[k] >= 5);
   }
+  q('manasum').innerHTML = `<span class="a">α${s.a}</span><span class="b">β${s.b}</span><span class="o">Ω${s.o}</span>`;
   q('win').hidden = s.vol < 10;
   q('wintext').textContent = `${s.name} が VOL 10 点を獲得しました`;
 }
@@ -567,6 +616,12 @@ function render(){
   app.classList.toggle('view-focus', viewMode === 'focus');
   app.classList.toggle('view-equal', viewMode === 'equal');
   app.classList.toggle('flip', $('flip').checked);
+  app.classList.toggle('compact', compact);
+  $('compactbtn').setAttribute('aria-pressed', String(compact));
+  document.querySelectorAll('.sec').forEach(s => {
+    const c = collapsed.has(s.dataset.sec); s.classList.toggle('closed', c);
+    const h = s.querySelector(':scope > .sec-head'); if (h) h.setAttribute('aria-expanded', String(!c));
+  });
   $('v-focus').setAttribute('aria-pressed', String(viewMode === 'focus'));
   $('v-equal').setAttribute('aria-pressed', String(viewMode === 'equal'));
   $('m-off').setAttribute('aria-pressed', String(mode === 'offline'));
@@ -612,6 +667,7 @@ function render(){
   };
   const [cls, txt] = mode === 'online' ? (states[netState] || states.idle) : ['', '1台モード'];
   pill.innerHTML = `<span class="dot ${cls}"></span>${esc(txt)}`;
+  pill.classList.toggle('offline', mode !== 'online');
   $('lobby').hidden = !!role; $('room').hidden = !role;
   if (role){
     $('roomcode').textContent = roomCode || '----';
@@ -635,6 +691,11 @@ function toast(msg){ const t = $('toast'); t.textContent = msg; t.hidden = false
 // ---------- events ----------
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
+  if (b.classList.contains('sec-head')){
+    const key = b.closest('.sec').dataset.sec;
+    if (collapsed.has(key)) collapsed.delete(key); else collapsed.add(key);
+    store.set('kt-collapsed', JSON.stringify([...collapsed])); render(); return;
+  }
   const panel = b.closest('.player');
   if (panel && b.dataset.act){
     const p = panel.dataset.p;
@@ -665,6 +726,7 @@ $('decide').onclick = decideFirst;
 $('reset').onclick = e => resetMatch(e.currentTarget);
 $('artist').onchange = e => { patch('game', {artist:e.target.checked}); if (e.target.checked) addLog(`${pn(S.game.active)}：Artistを登場させた`); };
 $('setbtn').onclick = () => { const s = $('settings'); s.hidden = !s.hidden; $('setbtn').setAttribute('aria-expanded', String(!s.hidden)); };
+$('compactbtn').onclick = () => { compact = !compact; store.set('kt-compact', compact ? '1' : ''); render(); };
 $('v-focus').onclick = () => { viewMode = 'focus'; store.set('kt-view', viewMode); render(); };
 $('v-equal').onclick = () => { viewMode = 'equal'; store.set('kt-view', viewMode); render(); };
 $('flip').onchange = e => { store.set('kt-flip', e.target.checked ? '1' : ''); render(); };
