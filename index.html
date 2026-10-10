@@ -313,7 +313,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact .settings{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 56px);z-index:6;max-height:calc(100dvh - 80px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.7)}
 .compact .top .iconbtn{height:34px}
 @media (max-height:540px){.wrap.compact{height:auto;overflow:visible}.compact-body{overflow:auto}.compact .player{min-height:220px}}
-@media (max-width:560px){.brand small{display:none}.pill.offline{display:none}.iconbtn{padding:0 9px}}
+@media (max-width:560px){.brand small{display:none}.iconbtn{padding:0 9px}}
 @media (max-width:360px){.compact .mrow .step button{width:36px}}
 @media (max-width:380px){.step button{width:40px;height:42px}.tk{width:22px;height:22px}.mrow{gap:6px}}
 /* PC（横並び）での簡潔表示 */
@@ -368,6 +368,32 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact #endturn{grid-area:end;min-height:44px}
 .compact .die{grid-area:die;align-self:center}
 .btn.danger{border-color:#6b2f3c}
+
+/* 設定パネル */
+.sgroup{display:flex;flex-direction:column;gap:10px}
+.sgroup+.sgroup{border-top:1px solid var(--line-soft);padding-top:14px}
+.sh{margin:0;font-size:12px;letter-spacing:.2em;color:var(--muted);font-weight:500}
+.modecards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modecard{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;color:var(--muted)}
+.modecard:hover{border-color:var(--gold-soft)}
+.modecard[aria-checked="true"]{border-color:var(--gold);background:linear-gradient(180deg,#2c2416,#1c1810);color:var(--gold);box-shadow:0 0 0 1px var(--gold-soft)}
+.mc-ic{width:30px;height:30px}
+.mc-t{font-family:var(--f-disp);font-weight:800;font-size:16px;color:var(--fg)}
+.modecard[aria-checked="true"] .mc-t{color:var(--gold)}
+.mc-d{font-size:11.5px;color:var(--muted);line-height:1.5}
+.steps{display:grid;gap:8px}
+@media (min-width:640px){.steps{grid-template-columns:1fr 1fr}.steps #resume{grid-column:1/-1}}
+.stepcard{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg)}
+.stepcard h3{margin:0 0 2px;font-size:14px}
+.stepcard p{margin:0 0 10px;font-size:12px;color:var(--muted);line-height:1.5}
+.stepcard .check{margin-top:6px}
+.sn{width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--ink);display:grid;place-items:center;font-size:13px;font-weight:700}
+.roombox{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.optlist{display:flex;flex-direction:column;gap:2px}
+.optlist .check small{display:block;margin-top:1px}
+.check input:disabled+span{opacity:.5}
+#setclose{align-self:flex-end}
+.pill{cursor:pointer}
 </style>
 </head>
 <body>
@@ -381,33 +407,49 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
     </div>
   </header>
 
-  <section class="settings" id="settings" hidden>
-    <div class="srow"><span class="slabel">表示</span>
-      <div class="seg" role="group" aria-label="表示"><button id="v-focus" aria-pressed="true">自分を大きく</button><button id="v-equal" aria-pressed="false">2人並べる</button></div>
-    </div>
-    <div class="srow">
-      <label class="check"><input type="checkbox" id="flip"> 対面表示（2人並べる時、相手側を180°回転）</label>
-      <label class="check"><input type="checkbox" id="follow" checked> 手番のプレイヤーを自動で大きく（1台で使う時）</label>
-      <label class="check" id="wakewrap"><input type="checkbox" id="wake"> 画面を消さない</label>
-    </div>
-    <div class="srow"><span class="slabel">プレイ</span>
-      <div class="seg" role="group" aria-label="プレイ方法"><button id="m-off" aria-pressed="true">1台で</button><button id="m-on" aria-pressed="false">オンライン対戦</button></div>
+  <section class="settings" id="settings" hidden aria-label="設定">
+    <div class="sgroup">
+      <h2 class="sh">遊び方を選ぶ</h2>
+      <div class="modecards" role="radiogroup" aria-label="遊び方">
+        <button class="modecard" id="m-off" role="radio" aria-checked="true">
+          <svg class="mc-ic" viewBox="0 0 40 40" aria-hidden="true"><rect x="11" y="6" width="18" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="20" cy="2.5" r="2" fill="currentColor"/><circle cx="20" cy="37.5" r="2" fill="currentColor"/><path d="M15 15h10M15 20h10M15 25h10" stroke="currentColor" stroke-width="1.6" opacity=".6"/></svg>
+          <span class="mc-t">1台で遊ぶ</span>
+          <span class="mc-d">この端末を2人で使います。テーブルに置いて向かい合わせで。</span>
+        </button>
+        <button class="modecard" id="m-on" role="radio" aria-checked="false">
+          <svg class="mc-ic" viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="9" width="13" height="22" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="24" y="9" width="13" height="22" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M17 17c2-2 4-2 6 0M17 23c2 2 4 2 6 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="mc-t">オンラインで遊ぶ</span>
+          <span class="mc-d">それぞれのスマホ・PCで開いて数値を同期します。ログイン不要。</span>
+        </button>
+      </div>
     </div>
 
-    <div class="online-box" id="online" hidden>
-      <div id="lobby" class="srow" style="align-items:flex-start;flex-direction:column;gap:12px">
-        <div class="srow">
-          <button class="btn primary" id="host">対戦を作る</button>
-          <span class="note">コードが発行されます。相手に伝えるか招待リンクを送ってください。</span>
+    <div class="sgroup" id="online" hidden>
+      <h2 class="sh">オンライン対戦</h2>
+      <div id="lobby" class="steps">
+        <div class="stepcard">
+          <span class="sn">A</span>
+          <div>
+            <h3>自分が対戦を作る</h3>
+            <p>4文字のコードが出ます。招待リンクかコードを相手に送ってください。</p>
+            <button class="btn primary" id="host">対戦を作る</button>
+          </div>
         </div>
-        <div class="srow">
-          <input class="field" id="joincode" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" inputmode="text" aria-label="対戦コード">
-          <button class="btn" id="join">コードで参加</button>
-          <label class="check"><input type="checkbox" id="watchjoin"> 観戦として参加</label>
+        <div class="stepcard">
+          <span class="sn">B</span>
+          <div>
+            <h3>相手の対戦に入る</h3>
+            <p>相手から聞いたコードを入力します。招待リンクを開いた場合は自動で入ります。</p>
+            <div class="row">
+              <input class="field" id="joincode" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" inputmode="text" aria-label="対戦コード">
+              <button class="btn primary" id="join">参加する</button>
+            </div>
+            <label class="check"><input type="checkbox" id="watchjoin"> 観戦として入る</label>
+          </div>
         </div>
         <button class="btn" id="resume" hidden></button>
       </div>
-      <div id="room" class="srow" hidden style="flex-direction:column;align-items:flex-start;gap:10px">
+      <div id="room" class="roombox" hidden>
         <div class="srow"><span class="slabel">対戦コード</span><span class="roomcode" id="roomcode">----</span></div>
         <div class="srow">
           <button class="btn primary" id="copylink">招待リンクをコピー</button>
@@ -420,6 +462,21 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
         <button class="btn" id="leave">対戦から抜ける</button>
       </div>
     </div>
+
+    <div class="sgroup">
+      <h2 class="sh">表示</h2>
+      <div class="srow"><span class="slabel">レイアウト</span>
+        <div class="seg" role="group" aria-label="レイアウト"><button id="v-equal" aria-pressed="false">2人並べる</button><button id="v-focus" aria-pressed="true">自分を大きく</button></div>
+      </div>
+      <div id="offopts" class="optlist">
+        <label class="check"><input type="checkbox" id="flip" checked> <span>対面表示（相手側を180°回転）<small class="note" id="flipnote" hidden>「2人並べる」のときに使えます</small></span></label>
+        <label class="check"><input type="checkbox" id="follow" checked> 手番のプレイヤーを自動で大きく</label>
+      </div>
+      <div class="optlist">
+        <label class="check" id="wakewrap"><input type="checkbox" id="wake"> 画面を消さない</label>
+      </div>
+    </div>
+    <button class="btn" id="setclose">閉じる</button>
   </section>
 
   <main class="board" id="board">
@@ -545,7 +602,9 @@ const conns = new Set();        // host connections
 let netState = 'idle';          // idle | connecting | hosting | connected | lost | notfound | error
 let seq = 0, unacked = [], retries = 0, retryT = null;
 let bigP = 'p1';
-let viewMode = store.get('kt-view') || 'focus';
+let viewMode = 'equal';
+const viewKey = () => mode === 'online' ? 'kt-view-on' : 'kt-view-off';
+function loadView(){ viewMode = store.get(viewKey()) || (mode === 'online' ? 'focus' : 'equal'); }
 let compact = store.get('kt-compact') === '1';
 let collapsed = (() => { try { const v = JSON.parse(store.get('kt-collapsed')); if (Array.isArray(v)) return new Set(v); } catch(e){} return new Set(['setup']); })();
 if (store.get('kt-cv') !== '2'){ collapsed.add('cap'); store.set('kt-cv', '2'); store.set('kt-collapsed', JSON.stringify([...collapsed])); }
@@ -897,8 +956,10 @@ function render(){
   });
   $('v-focus').setAttribute('aria-pressed', String(viewMode === 'focus'));
   $('v-equal').setAttribute('aria-pressed', String(viewMode === 'equal'));
-  $('m-off').setAttribute('aria-pressed', String(mode === 'offline'));
-  $('m-on').setAttribute('aria-pressed', String(mode === 'online'));
+  $('m-off').setAttribute('aria-checked', String(mode === 'offline'));
+  $('m-on').setAttribute('aria-checked', String(mode === 'online'));
+  $('offopts').hidden = mode === 'online';
+  $('flip').disabled = viewMode !== 'equal'; $('flipnote').hidden = viewMode === 'equal';
   $('online').hidden = mode !== 'online';
 
   const bottom = bigP, top = other(bottom);
@@ -935,10 +996,10 @@ function render(){
   // network UI
   const pill = $('netpill');
   const states = {
-    idle:['', mode === 'online' ? '未接続' : 'オフライン'], connecting:['wait','接続中…'], hosting:['on', `${roomCode}・相手 ${conns.size ? '接続中' : '待ち'}`],
+    idle:['', 'オンライン・未接続'], connecting:['wait','接続中…'], hosting:['on', `${roomCode}・相手 ${conns.size ? '接続中' : '待ち'}`],
     connected:['on', `${roomCode} に接続中`], lost:['wait','再接続中…'], notfound:['bad','対戦が見つかりません'], error:['bad','接続できません']
   };
-  const [cls, txt] = mode === 'online' ? (states[netState] || states.idle) : ['', '1台モード'];
+  const [cls, txt] = mode === 'online' ? (states[netState] || states.idle) : ['on', '1台で対戦'];
   pill.innerHTML = `<span class="dot ${cls}"></span>${esc(txt)}`;
   pill.classList.toggle('offline', mode !== 'online');
   $('lobby').hidden = !!role; $('room').hidden = !role;
@@ -1020,16 +1081,18 @@ $('reset2').onclick = e => resetMatch(e.currentTarget);
 $('artist').onchange = e => { patch('game', {artist:e.target.checked}); if (e.target.checked) addLog(`${pn(S.game.active)}：Artistを登場させた`); };
 $('setbtn').onclick = () => { const s = $('settings'); s.hidden = !s.hidden; $('setbtn').setAttribute('aria-expanded', String(!s.hidden)); };
 $('compactbtn').onclick = () => { compact = !compact; store.set('kt-compact', compact ? '1' : ''); render(); };
-$('v-focus').onclick = () => { viewMode = 'focus'; store.set('kt-view', viewMode); render(); };
-$('v-equal').onclick = () => { viewMode = 'equal'; store.set('kt-view', viewMode); render(); };
-$('flip').onchange = e => { store.set('kt-flip', e.target.checked ? '1' : ''); render(); };
+$('v-focus').onclick = () => { viewMode = 'focus'; store.set(viewKey(), viewMode); render(); };
+$('v-equal').onclick = () => { viewMode = 'equal'; store.set(viewKey(), viewMode); render(); };
+$('flip').onchange = e => { store.set('kt-flip', e.target.checked ? '1' : '0'); render(); };
+$('setclose').onclick = () => { $('settings').hidden = true; $('setbtn').setAttribute('aria-expanded','false'); };
+$('netpill').onclick = () => $('setbtn').click();
 $('follow').onchange = e => store.set('kt-follow', e.target.checked ? '1' : '0');
 $('m-off').onclick = () => {
   if (mode === 'offline') return;
   teardown(); mode = 'offline'; seat = 'p1'; S = loadJSON('kt-offline') || defaults(); bigP = S.game.first && $('follow').checked ? S.game.active : 'p1';
-  store.set('kt-mode', 'offline'); render();
+  store.set('kt-mode', 'offline'); loadView(); render();
 };
-$('m-on').onclick = () => { if (mode === 'online') return; persist(); mode = 'online'; store.set('kt-mode', 'online'); S = defaults(); render(); };
+$('m-on').onclick = () => { if (mode === 'online') return; persist(); mode = 'online'; store.set('kt-mode', 'online'); S = defaults(); loadView(); render(); };
 $('host').onclick = () => startHost(newCode(), null);
 $('join').onclick = () => {
   const c = $('joincode').value.trim().toUpperCase();
@@ -1064,18 +1127,19 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 // ---------- boot ----------
 buildPanel($('panel-top')); buildPanel($('panel-bottom'));
-$('flip').checked = store.get('kt-flip') === '1';
+$('flip').checked = store.get('kt-flip') !== '0';
 $('follow').checked = store.get('kt-follow') !== '0';
 bigP = S.game.first && $('follow').checked ? S.game.active : 'p1';
 const qs = new URLSearchParams(location.search);
 const qroom = (qs.get('room') || '').toUpperCase();
 if (/^[A-Z0-9]{4}$/.test(qroom)){
-  mode = 'online'; S = defaults(); $('joincode').value = qroom;
+  mode = 'online'; S = defaults(); loadView(); $('joincode').value = qroom;
   $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true');
   render(); startGuest(qroom, false);
   history.replaceState(null, '', location.pathname);
 } else {
   if (store.get('kt-mode') === 'online'){ mode = 'online'; S = defaults(); }
+  loadView();
   if (!store.get('kt-seen')){ $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
   render();
 }
