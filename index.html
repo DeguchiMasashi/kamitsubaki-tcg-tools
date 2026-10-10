@@ -394,6 +394,15 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .check input:disabled+span{opacity:.5}
 #setclose{align-self:flex-end}
 .pill{cursor:pointer}
+
+/* 相手の上限シート・勝利表示 */
+.sheet{position:fixed;inset:0;background:rgba(5,4,10,.6);display:flex;align-items:flex-end;justify-content:center;z-index:8;padding:0 12px calc(12px + env(safe-area-inset-bottom,0px))}
+.sheet-in{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:14px;width:100%;max-width:480px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -10px 40px rgba(0,0,0,.5)}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sheet-h b{font-family:var(--f-disp);font-size:16px}
+.sheet .caprow{grid-template-columns:28px minmax(0,1fr) auto}
+.mini .capbtn{background:transparent;color:var(--warn);border-color:rgba(242,166,90,.5);cursor:pointer;flex:0 0 auto}
+.win .row .btn{min-height:40px}
 </style>
 </head>
 <body>
@@ -524,6 +533,13 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
     </div>
   </main>
 </div>
+<div class="sheet" id="capsheet" hidden role="dialog" aria-label="上限の変更" data-p="p2">
+  <div class="sheet-in">
+    <div class="sheet-h"><b id="capsheet-t">上限の変更</b><button class="btn" id="capsheet-x">閉じる</button></div>
+    <div class="caps" id="capsheet-rows"></div>
+    <p class="note">相手のカード効果で上限が変わるときに使います。上限を超えた分は自動で消失します。</p>
+  </div>
+</div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script src="peerjs.min.js"></script>
@@ -624,8 +640,21 @@ function patch(k, o){
 }
 function addLog(msg){
   const t = new Date(); const ts = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-  patch('game', {log:[{ts, m:msg}, ...(S.game.log || [])].slice(0, 40)});
+  const e = {ts, m: msg};
+  if (mode === 'online' && role === 'guest'){
+    if (seat !== 'watch' && conn && conn.open){ try { conn.send({t:'l', e}); } catch(x){} }
+    return;
+  }
+  if (mode === 'online' && seat === 'watch' && role !== 'host') return;
+  S.game.log = [e, ...(S.game.log || [])].slice(0, 40);
+  if (mode === 'online' && role === 'host') broadcast(null, 0);
+  persist(); render();
 }
+function closeSettings(){ $('settings').hidden = true; $('setbtn').setAttribute('aria-expanded', 'false'); }
+const TURN_KEYS = ['active','turn','phase','artist'];
+const myTurn = () => mode !== 'online' || seat === S.game.active;
+const CID = (() => { let v = store.get('kt-cid'); if (!v){ v = Math.random().toString(36).slice(2, 12); store.set('kt-cid', v); } return v; })();
+let joinedOnce = false;
 
 // ---------- networking (PeerJS, host-authoritative) ----------
 function broadcast(from, q){
@@ -646,16 +675,43 @@ function startHost(code, resumeState){
   S = resumeState || defaults();
   if (!resumeState) S.game.log = [{ts:new Date().toTimeString().slice(0,5), m:`対戦 ${code} を作成`}];
   seat = store.get('kt-seat-host') || 'p1'; bigP = seat === 'watch' ? 'p1' : seat;
+  store.set('kt-mode', 'online');
   peer = new Peer(PFX + code, window.KT_PEER_OPTS || {});
   peer.on('open', () => { netState = 'hosting'; retries = 0; persist(); render(); });
   peer.on('connection', c => {
-    c.on('open', () => { conns.add(c); try { c.send({t:'s', s:S}); } catch(e){} render(); });
+    c.on('open', () => {
+      const first = conns.size === 0; conns.add(c); try { c.send({t:'s', s:S}); } catch(e){}
+      if (first){ closeSettings(); toast('相手が接続しました'); }
+      render();
+    });
     c.on('data', m => {
-      if (m && m.t === 'r'){ if (c.seat === 'p1' || c.seat === 'p2') doReset(); return; }
-      if (m && m.t === 'h'){ c.seat = (m.seat === 'p1' || m.seat === 'p2') ? m.seat : 'watch'; render(); return; }
-      if (!m || m.t !== 'p' || !(m.k in S)) return;
-      if (m.k !== 'game' && m.k !== c.seat && !capOnlyPatch(m.k, m.o, c.seat)){ try { c.send({t:'s', s:S, q:m.q|0}); } catch(e){} return; }
-      if (m.k === 'game' && c.seat !== 'p1' && c.seat !== 'p2') return;
+      if (!m || typeof m !== 'object') return;
+      const seated = c.seat === 'p1' || c.seat === 'p2';
+      if (m.t === 'r'){ if (seated) doReset(); return; }
+      if (m.t === 'h'){
+        const want = (m.seat === 'p1' || m.seat === 'p2') ? m.seat : 'watch';
+        c.cid = String(m.cid || '').slice(0, 40);
+        for (const x of [...conns]) if (x !== c && c.cid && x.cid === c.cid){ conns.delete(x); try { x.close(); } catch(e){} }
+        let got = want;
+        if (want !== 'watch'){
+          const taken = new Set([seat, ...[...conns].filter(x => x !== c).map(x => x.seat)]);
+          if (taken.has(want)) got = ['p1','p2'].find(x => !taken.has(x)) || 'watch';
+        }
+        c.seat = got; try { c.send({t:'seat', seat:got, want}); } catch(e){}
+        render(); return;
+      }
+      if (m.t === 'l'){
+        if (!seated) return;
+        const e = (clean('game', {log:[m.e]}).log || [])[0];
+        if (e && e.m){ S.game.log = [e, ...(S.game.log || [])].slice(0, 40); persist(); broadcast(null, 0); render(); }
+        return;
+      }
+      if (m.t !== 'p' || !(m.k in S)) return;
+      const reject = () => { try { c.send({t:'s', s:S, q:m.q|0}); } catch(e){} };
+      if (m.o && typeof m.o === 'object') delete m.o.log;
+      if (m.k !== 'game' && m.k !== c.seat && !capOnlyPatch(m.k, m.o, c.seat)) return reject();
+      if (m.k === 'game' && !seated) return reject();
+      if (m.k === 'game' && m.o && !('first' in m.o) && Object.keys(m.o).some(x => TURN_KEYS.includes(x)) && S.game.first && c.seat !== S.game.active) return reject();
       Object.assign(S[m.k], clean(m.k, m.o)); persist(); broadcast(c, m.q|0); render();
     });
     c.on('close', () => { conns.delete(c); render(); });
@@ -678,7 +734,9 @@ function startGuest(code, asWatch){
   role = 'guest'; roomCode = code; netState = 'connecting';
   seat = asWatch ? 'watch' : (store.get('kt-seat-guest') || 'p2');
   if (seat !== 'watch') bigP = seat;
-  store.set('kt-last', JSON.stringify({role:'guest', code, at:Date.now()}));
+  joinedOnce = false;
+  store.set('kt-mode', 'online');
+  store.set('kt-last', JSON.stringify({role:'guest', code, at:Date.now(), watch: !!asWatch}));
   peer = window.KT_PEER_OPTS ? new Peer(window.KT_PEER_OPTS) : new Peer();
   peer.on('open', () => dial());
   peer.on('disconnected', () => { if (peer && !peer.destroyed) setTimeout(() => { try { peer.reconnect(); } catch(e){} }, 1000); });
@@ -693,8 +751,21 @@ function dial(){
   if (!peer || peer.destroyed || !roomCode) return;
   const c = peer.connect(PFX + roomCode, {reliable:true});
   conn = c;
-  c.on('open', () => { netState = 'connected'; retries = 0; sendHello(); render(); });
+  c.on('open', () => {
+    netState = 'connected'; retries = 0; sendHello();
+    if (!joinedOnce){ joinedOnce = true; closeSettings(); toast(`対戦 ${roomCode} に参加しました`); }
+    render();
+  });
   c.on('data', m => {
+    if (m && m.t === 'seat'){
+      if (m.seat !== seat){
+        seat = m.seat;
+        if (seat !== 'watch'){ bigP = seat; store.set('kt-seat-guest', seat); }
+        toast(seat === 'watch' ? 'プレイヤーの席が埋まっているため、観戦で参加しました' : `選んだ席が使われていたため ${seat.toUpperCase()} で参加しました`);
+        render();
+      }
+      return;
+    }
     if (!m || m.t !== 's' || !m.s) return;
     const s = defaults();
     for (const k of ['game','p1','p2']) Object.assign(s[k], clean(k, m.s[k]));
@@ -710,7 +781,7 @@ function capOnlyPatch(k, o, from){
   if (!o || typeof o !== 'object' || !S[k]) return false;
   return Object.keys(o).every(x => MOD_KEYS.includes(x) || (['a','b','o','noise'].includes(x) && Number.isInteger(o[x]) && o[x] <= (S[k][x] || 0)));
 }
-function sendHello(){ if (role === 'guest' && conn && conn.open){ try { conn.send({t:'h', seat}); } catch(e){} } }
+function sendHello(){ if (role === 'guest' && conn && conn.open){ try { conn.send({t:'h', seat, cid: CID}); } catch(e){} } }
 function scheduleRetry(){
   clearTimeout(retryT);
   if (role !== 'guest') return;
@@ -752,13 +823,16 @@ function setCap(p, k, d){
 }
 let armedLim = null, armedLimT = null;
 const capMode = new Set();
+const winHidden = new Set();
 function toggleLimited(p){
   if (!S[p].lu){ patch(p, {lu:true}); addLog(`${pn(p)}：LIMITEDを使用`); return; }
   if (armedLim !== p){ armedLim = p; clearTimeout(armedLimT); armedLimT = setTimeout(() => { armedLim = null; render(); }, 3000); render(); return; }
   armedLim = null; patch(p, {lu:false}); addLog(`${pn(p)}：LIMITEDを使用前に戻した`);
 }
-function setPhase(ph){ if (S.game.phase === ph) return; patch('game', {phase: ph}); addLog(`${pn(S.game.active)}：${PH[ph]}フェーズ`); }
+function setPhase(ph){ if (S.game.phase === ph) return; if (!myTurn()){ toast('相手の手番です'); return; } patch('game', {phase: ph}); addLog(`${pn(S.game.active)}：${PH[ph]}フェーズ`); }
 function endTurn(){
+  if (!S.game.first) return;
+  if (!myTurn()){ toast('相手の手番です。ターン終了は手番のプレイヤーが押します'); return; }
   const g = S.game, nx = other(g.active);
   patch('game', {active: nx, turn: (g.turn || 1) + 1, phase: 'draw', artist: false});
   addLog(`${pn(g.active)} ターン終了 → ${pn(nx)} の番`);
@@ -799,7 +873,9 @@ function doReset(){
   const d = defaults();
   for (const p of ['p1','p2']){ d[p].name = S[p].name; Object.assign(S[p], d[p]); }
   Object.assign(S.game, d.game);
-  capMode.clear(); patch('game', {}); addLog('対戦をリセットしました');
+  capMode.clear(); winHidden.clear();
+  if (mode === 'online' && role === 'host') broadcast(null, 0);
+  persist(); render(); addLog('対戦をリセットしました');
 }
 function buzz(){ try { navigator.vibrate && navigator.vibrate(30); } catch(e){} }
 
@@ -871,7 +947,7 @@ function buildPanel(el){
         ${k === 'vol' ? '' : `<span class="tstep tcap"><button data-cap="${k}" data-d="-1" aria-label="${g}の上限 -1">−</button><button data-cap="${k}" data-d="1" aria-label="${g}の上限 +1">＋</button></span>`}
       </div>`).join('')}
     </div>
-    <div class="win" data-f="win" hidden><div><h2>LIVE 成功</h2><p data-f="wintext"></p></div></div>`;
+    <div class="win" data-f="win" hidden><div><h2>LIVE 成功</h2><p data-f="wintext"></p><div class="row" style="justify-content:center"><button class="btn" data-winclose="1">閉じる</button><button class="btn" data-winundo="1">VOLを1戻す</button></div></div></div>`;
 }
 function roleLabel(p){ const g = S.game; return g.first ? (g.first === p ? '先攻' : '後攻') : p.toUpperCase(); }
 function updatePanel(el, p){
@@ -913,7 +989,9 @@ function updatePanel(el, p){
     n.innerHTML = cm ? `<span class="capl">上限</span>${cap}` : s[k] + (k !== 'vol' && s[MOD[k]] ? `<small>/${cap}</small>` : '');
     n.classList.toggle('full', !cm && k !== 'vol' && s[k] >= cap);
   }
-  q('win').hidden = s.vol < 10;
+  if (s.vol < 10) winHidden.delete(p);
+  q('win').hidden = s.vol < 10 || winHidden.has(p);
+  el.querySelector('[data-winundo]').hidden = !canEdit(p);
   q('wintext').textContent = `${s.name} が VOL 10 点を獲得しました`;
 }
 function updateMini(p){
@@ -930,6 +1008,7 @@ function updateMini(p){
       <span class="st o" aria-label="魔力Ω">${IC.o}${s.o}${s.mo ? `<small>/${capOf(p,'o')}</small>` : ''}</span>
       <span class="st lim${s.lu ? ' used' : ''}" aria-label="LIMITED ${s.lu ? '使用後' : '使用前'}">${IC.lim}<small>${s.lu ? '済' : '未'}</small></span>
     </span>
+    <button class="chip capbtn" data-capsheet="${p}" aria-label="${esc(s.name)}の上限を変更">上限</button>
     <span class="chip swap">⇅<span class="t"> 切替</span></span>
     <span class="volbar"><i style="width:${s.vol*10}%"></i></span>`;
 }
@@ -971,7 +1050,9 @@ function render(){
   document.querySelectorAll('.phases button').forEach(b => { b.setAttribute('aria-pressed', String(!!g.first && b.dataset.phase === g.phase)); b.disabled = !g.first; });
   $('hint').innerHTML = hintFor(g).map(h => `<li>${h}</li>`).join('');
   $('artist').checked = !!g.artist; $('artist').disabled = !g.first;
-  $('endturn').disabled = !g.first;
+  const oppTurn = !!g.first && mode === 'online' && seat !== g.active;
+  $('endturn').disabled = !g.first || oppTurn;
+  $('endturn').textContent = oppTurn ? '相手の手番' : 'ターン終了';
 
   const d = g.dice, die = $('die');
   if (d && d.n !== lastDie){ if (lastDie !== null){ die.classList.remove('rolling'); void die.offsetWidth; die.classList.add('rolling'); } lastDie = d.n; }
@@ -993,6 +1074,15 @@ function render(){
   const bonus = p => { const a = S[p].mull||0, b = S[other(p)].mull||0; return a < b ? `+${b-a}枚` : ''; };
   $('mull').innerHTML = ['p1','p2'].map(p => `<span>${esc(pn(p))}　<b style="color:var(--gold)">${bonus(p)}</b></span><span class="mcount" style="font-size:22px">${S[p].mull||0}</span><span class="step"><button data-mull="${p}" data-d="-1" aria-label="引き直し -1" ${canEdit(p)?"":"disabled"}>−</button><button data-mull="${p}" data-d="1" aria-label="引き直し +1" ${canEdit(p)?"":"disabled"}>＋</button></span>`).join('');
 
+  const cs = $('capsheet');
+  if (!cs.hidden){
+    const p = cs.dataset.p, sp = S[p];
+    $('capsheet-t').textContent = `${pn(p)} の上限の変更`;
+    $('capsheet-rows').innerHTML = ['a','b','o','noise'].map(k => {
+      const d = sp[MOD[k]] || 0;
+      return `<div class="caprow c-${k}"><span class="mname">${IC[k]}</span><span class="capv">上限 <b>${capOf(p,k)}</b><small>${d ? `（${d > 0 ? '+' : ''}${d}）` : ''}</small>　現在 ${sp[k]}</span><span class="step capstep"><button data-cap="${k}" data-d="-1" aria-label="上限 -1">−</button><button data-cap="${k}" data-d="1" aria-label="上限 +1">＋</button></span></div>`;
+    }).join('');
+  }
   // network UI
   const pill = $('netpill');
   const states = {
@@ -1050,12 +1140,19 @@ document.addEventListener('click', e => {
   }
   if (b.dataset.cap){
     if (!canCap()){ toast('観戦中は操作できません'); return; }
-    return setCap(b.closest('.player').dataset.p, b.dataset.cap, +b.dataset.d);
+    return setCap(b.closest('[data-p]').dataset.p, b.dataset.cap, +b.dataset.d);
   }
+  if (b.dataset.capsheet){
+    if (!canCap()){ toast('観戦中は操作できません'); return; }
+    $('capsheet').dataset.p = b.dataset.capsheet; $('capsheet').hidden = false; render(); return;
+  }
+  if (b.dataset.winclose){ winHidden.add(b.closest('.player').dataset.p); render(); return; }
+  if (b.dataset.winundo){ const p = b.closest('.player').dataset.p; if (canEdit(p)) adjust(p, 'vol', -1); return; }
   if (b.dataset.phase) return setPhase(b.dataset.phase);
   if (b.dataset.first) return chooseFirst(b.dataset.first);
   if (b.dataset.mull){ if (!canEdit(b.dataset.mull)){ toast('相手の値は操作できません'); return; } const p = b.dataset.mull, v = Math.max(0, (S[p].mull||0) + (+b.dataset.d)); patch(p, {mull:v}); addLog(`${pn(p)}：引き直し ${v}回`); return; }
   if (b.dataset.seat){
+    if (role === 'host' && b.dataset.seat !== 'watch' && [...conns].some(x => x.seat === b.dataset.seat)){ toast('その席は相手が使っています'); return; }
     seat = b.dataset.seat; store.set(role === 'host' ? 'kt-seat-host' : 'kt-seat-guest', seat);
     if (seat !== 'watch') bigP = seat; sendHello(); render(); return;
   }
@@ -1071,14 +1168,16 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.classList.contains('pname')) e.target.blur();
 });
 const swapBig = () => { bigP = other(bigP); render(); };
-$('mini').addEventListener('click', swapBig);
+$('mini').addEventListener('click', e => { if (e.target.closest('[data-capsheet]')) return; swapBig(); });
 $('mini').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); swapBig(); } });
 $('endturn').onclick = endTurn;
+$('capsheet-x').onclick = () => { $('capsheet').hidden = true; };
+$('capsheet').addEventListener('click', e => { if (e.target === $('capsheet')) $('capsheet').hidden = true; });
 $('die').onclick = roll;
 $('decide').onclick = decideFirst;
 $('reset').onclick = e => resetMatch(e.currentTarget);
 $('reset2').onclick = e => resetMatch(e.currentTarget);
-$('artist').onchange = e => { patch('game', {artist:e.target.checked}); if (e.target.checked) addLog(`${pn(S.game.active)}：Artistを登場させた`); };
+$('artist').onchange = e => { if (!myTurn()){ e.target.checked = !!S.game.artist; toast('相手の手番です'); return; } patch('game', {artist:e.target.checked}); if (e.target.checked) addLog(`${pn(S.game.active)}：Artistを登場させた`); };
 $('setbtn').onclick = () => { const s = $('settings'); s.hidden = !s.hidden; $('setbtn').setAttribute('aria-expanded', String(!s.hidden)); };
 $('compactbtn').onclick = () => { compact = !compact; store.set('kt-compact', compact ? '1' : ''); render(); };
 $('v-focus').onclick = () => { viewMode = 'focus'; store.set(viewKey(), viewMode); render(); };
@@ -1142,6 +1241,11 @@ if (/^[A-Z0-9]{4}$/.test(qroom)){
   loadView();
   if (!store.get('kt-seen')){ $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
   render();
+  let last = null; try { last = JSON.parse(store.get('kt-last')); } catch(e){}
+  if (mode === 'online' && last && last.code && Date.now() - (last.at || 0) < 12*3600*1000){
+    toast(`前回の対戦 ${last.code} に再接続しています`);
+    if (last.role === 'host') startHost(last.code, loadJSON('kt-host-state')); else startGuest(last.code, !!last.watch);
+  }
 }
 })();
 </script>
