@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f0d1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LIVEカウンター">
+<meta name="description" content="神椿TCG（KAMITSUBAKI CARD GAME）のVOL・魔力・ターン進行・サイコロを管理するカウンター。ログイン不要、対戦コードでスマホ同士も同期。">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>神椿 LIVEカウンター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Cormorant+Garamond:wght@600;700&display=swap">
+<style>
+/* Layout: プレイシートを模した盤面。「自分を大きく」= 相手は上部の要約バー / 「2人並べる」= 2人分のフルパネル（対面回転可） */
+:root{
+  color-scheme: dark;
+  --bg:#0f0d1a; --bg2:#171427; --panel:#1c1830; --line:#3a3354; --line-soft:#2a2540;
+  --fg:#ece6f5; --muted:#a59cba; --dim:#6f6788;
+  --gold:#d6b46a; --gold-soft:#5a4a2a; --ink:#1a1408;
+  --alpha:#ef5a7a; --beta:#45b7d6; --omega:#a985f0; --noise:#8d8aa0;
+  --ok:#6fcf97; --warn:#f2a65a; --bad:#e2667a;
+  --f-disp:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-num:"Cormorant Garamond","Times New Roman",serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5;
+  padding:env(safe-area-inset-top,0px) max(12px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(12px,env(safe-area-inset-left,0px));
+  background:radial-gradient(1200px 600px at 20% -10%,#2a1f45 0%,transparent 60%),radial-gradient(900px 500px at 110% 110%,#331a2e 0%,transparent 60%),var(--bg);
+  background-attachment:fixed;min-height:100vh;touch-action:manipulation}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1280px;margin:0 auto;padding-block:10px 40px;display:flex;flex-direction:column;gap:10px}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:8px;min-width:0}
+.brand h1{font-family:var(--f-disp);font-weight:800;font-size:clamp(17px,4.6vw,22px);margin:0;letter-spacing:.08em;white-space:nowrap}
+.brand small{color:var(--muted);font-size:10px;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}
+.topr{display:flex;gap:6px;align-items:center;flex:0 0 auto}
+.pill{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);white-space:nowrap;background:var(--bg2)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dim);margin-right:5px;vertical-align:middle}
+.dot.on{background:var(--ok)} .dot.wait{background:var(--warn)} .dot.bad{background:var(--bad)}
+.iconbtn{border:1px solid var(--line);background:var(--bg2);border-radius:10px;height:36px;min-width:36px;padding:0 10px;font-size:13px}
+.iconbtn[aria-expanded="true"]{border-color:var(--gold);color:var(--gold)}
+
+/* settings */
+.settings{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:12px}
+.srow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.slabel{font-size:11px;color:var(--muted);letter-spacing:.15em;min-width:5.5em}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:999px;color:var(--muted);font-size:13px;min-height:32px}
+.seg button[aria-pressed="true"]{background:var(--gold);color:var(--ink);font-weight:700}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;min-height:32px}
+.check input{width:20px;height:20px;accent-color:var(--gold);flex:0 0 auto}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 14px;font-size:13.5px;min-height:40px}
+.btn:hover{border-color:var(--gold)}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:var(--ink);font-weight:700}
+.btn.danger.armed{background:#7a2335;border-color:#c0475f}
+.field{background:var(--bg);border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:8px 10px;font:inherit;min-height:40px}
+#joincode{width:6.5em;text-transform:uppercase;letter-spacing:.25em;font-family:var(--f-num);font-size:20px;font-weight:700}
+.roomcode{font-family:var(--f-num);font-size:34px;font-weight:700;letter-spacing:.25em;color:var(--gold);line-height:1}
+.note{font-size:12px;color:var(--muted);margin:0}
+.online-box{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line-soft);padding-top:12px}
+
+/* board */
+.board{display:grid;gap:10px;grid-template-columns:minmax(0,1fr);grid-template-areas:"mini" "top" "ctrl" "bottom" "more"}
+#mini{grid-area:mini} #panel-top{grid-area:top} #ctrl{grid-area:ctrl} #panel-bottom{grid-area:bottom} #more{grid-area:more}
+.view-focus #panel-top{display:none}
+.view-equal #mini{display:none}
+.flip.view-equal #panel-top{transform:rotate(180deg)}
+@media (min-width:1000px){
+  .view-equal .board{grid-template-columns:minmax(0,1fr) 340px minmax(0,1fr);grid-template-areas:"top ctrl bottom" "top more bottom";align-items:start}
+  .view-focus .board{grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"mini mini" "bottom ctrl" "bottom more";align-items:start}
+}
+
+/* mini (opponent summary) */
+.mini{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mini.turn{border-color:var(--gold)}
+.mini .mname{font-family:var(--f-disp);font-weight:800;font-size:15px;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini .stats{display:flex;gap:10px;align-items:baseline;flex:1 1 auto;flex-wrap:wrap}
+.mini .st{font-family:var(--f-num);font-size:22px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.mini .st small{font-family:var(--f-body);font-size:10px;color:var(--muted);font-weight:500;margin-right:2px}
+.mini .st.vol{color:var(--gold)}
+.mini .st.a{color:var(--alpha)} .mini .st.b{color:var(--beta)} .mini .st.o{color:var(--omega)}
+.mini .volbar{flex:1 1 100%;height:4px;background:var(--line-soft);border-radius:2px;overflow:hidden;order:9}
+.mini .volbar i{display:block;height:100%;background:var(--gold);transition:width .2s}
+
+/* player panel */
+.player{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:12px;position:relative;min-width:0}
+.player.turn{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-soft),0 0 30px -12px var(--gold)}
+.phead{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pname{flex:1 1 120px;min-width:0;background:transparent;border:0;border-bottom:1px dashed var(--line);color:var(--fg);font-family:var(--f-disp);font-weight:800;font-size:19px;padding:2px 0;border-radius:0}
+.chip{font-size:11px;border-radius:999px;padding:2px 8px;border:1px solid var(--line);color:var(--muted);letter-spacing:.05em;white-space:nowrap}
+.chip.me{border-color:var(--gold);color:var(--gold)}
+.chip.turn{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:700}
+.chip.role{color:var(--fg)}
+.sec-label{font-size:11px;color:var(--muted);letter-spacing:.15em;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sec-label .num{font-family:var(--f-num);font-size:32px;line-height:1;color:var(--fg);letter-spacing:0;font-variant-numeric:tabular-nums}
+.sec-label .num small{font-size:15px;color:var(--dim)}
+.voltrack{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin-top:6px}
+.vp{aspect-ratio:1;width:100%;max-width:100%;border-radius:50%;border:1.5px solid var(--gold-soft);background:transparent;padding:0;display:grid;place-items:center;font-family:var(--f-num);font-size:12px;color:var(--dim);transition:background .15s,border-color .15s}
+.vp.on{background:radial-gradient(circle at 35% 30%,#f7e3a8,var(--gold) 55%,#8a6a2a);border-color:var(--gold);color:#3a2a0a;font-weight:700}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.step{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:0 0 auto}
+.step button{border:0;background:var(--bg2);width:44px;height:44px;font-size:19px;font-weight:700}
+.step button:active{background:var(--line)}
+.step button+button{border-left:1px solid var(--line)}
+.step.big button{width:64px;height:48px;font-size:22px}
+.step .txt{width:auto;padding:0 12px;font-size:14px}
+.noise{display:flex;gap:5px}
+.np{width:24px;height:34px;border-radius:4px;border:1px solid var(--line);background:transparent;padding:0}
+.np.on{background:repeating-linear-gradient(135deg,#3b3752 0 4px,#2c2942 4px 8px);border-color:var(--noise)}
+.mana{display:grid;gap:8px;margin-top:6px}
+.mrow{display:grid;grid-template-columns:1.6em minmax(0,1fr) 1.4em auto;align-items:center;gap:8px}
+.mname{font-family:var(--f-num);font-weight:700;font-size:26px;line-height:1;text-align:center}
+.tokens{display:flex;gap:5px;min-width:0}
+.tk{width:28px;height:28px;flex:0 1 28px;min-width:16px;aspect-ratio:1;border-radius:50%;border:1.5px solid var(--c);opacity:.4;background:transparent;padding:0}
+.tk.on{opacity:1;background:radial-gradient(circle at 35% 30%,#fff8,var(--c) 60%);box-shadow:0 0 10px -2px var(--c)}
+.mcount{font-family:var(--f-num);font-size:28px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;line-height:1}
+.mcount.full{color:var(--warn)}
+.c-a{--c:var(--alpha)} .c-b{--c:var(--beta)} .c-o{--c:var(--omega)}
+.c-a .mname{color:var(--alpha)} .c-b .mname{color:var(--beta)} .c-o .mname{color:var(--omega)}
+.win{position:absolute;inset:0;border-radius:14px;background:rgba(15,13,26,.88);display:grid;place-items:center;text-align:center;z-index:2;padding:16px}
+.win h2{font-family:var(--f-disp);font-size:30px;margin:0;color:var(--gold);letter-spacing:.1em}
+.win p{margin:6px 0 12px;color:var(--muted)}
+
+/* control + more */
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card h3{margin:0;font-size:11px;color:var(--muted);letter-spacing:.2em;font-weight:500}
+.turnline{font-family:var(--f-disp);font-weight:800;font-size:18px;line-height:1.3}
+.turnline small{font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);margin-left:6px}
+.phases{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.phases button{border:0;background:transparent;padding:9px 4px;font-size:13.5px;color:var(--muted);min-height:40px}
+.phases button+button{border-left:1px solid var(--line)}
+.phases button[aria-pressed="true"]{background:var(--gold);color:var(--ink);font-weight:700}
+.hint{font-size:12.5px;color:var(--muted);margin:0;padding-left:1.1em}
+.hint li{margin:2px 0}
+.hint b{color:var(--fg);font-weight:700}
+.ctrlrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.die{width:52px;height:52px;border-radius:11px;border:0;background:#f3eee2;color:#1d1830;display:grid;place-items:center;font-family:var(--f-num);font-size:34px;font-weight:700;box-shadow:inset 0 -4px 0 #cfc6b0;padding:0}
+.die.rolling{animation:shake .5s}
+@keyframes shake{20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(5deg)}}
+@media (prefers-reduced-motion:reduce){.die.rolling{animation:none}}
+.judge{display:flex;flex-direction:column;font-size:12px;line-height:1.35;min-width:0}
+.judge span{color:var(--dim)} .judge span.y{color:var(--ok)}
+.judge .by{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
+.log li{display:flex;gap:8px;color:var(--muted)}
+.log li time{color:var(--dim);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.log li:first-child{color:var(--fg)}
+details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:.1em;min-height:28px;display:flex;align-items:center}
+.mull{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 10px;align-items:center;font-size:13px}
+.more{display:flex;flex-direction:column;gap:10px;min-width:0}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2b2342;border:1px solid var(--warn);color:var(--fg);padding:9px 14px;border-radius:10px;font-size:13px;z-index:10;width:max-content;max-width:calc(100% - 32px)}
+.foot{font-size:11px;color:var(--dim);text-align:center}
+.foot a{color:var(--muted)}
+@media (max-width:560px){.brand small{display:none}}
+@media (max-width:380px){.step button{width:40px;height:42px}.tk{width:22px;height:22px}.mrow{gap:6px}}
+</style>
+</head>
+<body>
+<div class="wrap view-focus" id="app">
+  <header class="top">
+    <div class="brand"><h1>神椿 LIVEカウンター</h1><small>Kamitsubaki TCG</small></div>
+    <div class="topr">
+      <span class="pill" id="netpill"><span class="dot"></span>オフライン</span>
+      <button class="iconbtn" id="setbtn" aria-expanded="false" aria-controls="settings">設定</button>
+    </div>
+  </header>
+
+  <section class="settings" id="settings" hidden>
+    <div class="srow"><span class="slabel">表示</span>
+      <div class="seg" role="group" aria-label="表示"><button id="v-focus" aria-pressed="true">自分を大きく</button><button id="v-equal" aria-pressed="false">2人並べる</button></div>
+    </div>
+    <div class="srow">
+      <label class="check"><input type="checkbox" id="flip"> 対面表示（2人並べる時、相手側を180°回転）</label>
+      <label class="check"><input type="checkbox" id="follow" checked> 手番のプレイヤーを自動で大きく（1台で使う時）</label>
+      <label class="check" id="wakewrap"><input type="checkbox" id="wake"> 画面を消さない</label>
+    </div>
+    <div class="srow"><span class="slabel">プレイ</span>
+      <div class="seg" role="group" aria-label="プレイ方法"><button id="m-off" aria-pressed="true">1台で</button><button id="m-on" aria-pressed="false">オンライン対戦</button></div>
+    </div>
+
+    <div class="online-box" id="online" hidden>
+      <div id="lobby" class="srow" style="align-items:flex-start;flex-direction:column;gap:12px">
+        <div class="srow">
+          <button class="btn primary" id="host">対戦を作る</button>
+          <span class="note">コードが発行されます。相手に伝えるか招待リンクを送ってください。</span>
+        </div>
+        <div class="srow">
+          <input class="field" id="joincode" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" inputmode="text" aria-label="対戦コード">
+          <button class="btn" id="join">コードで参加</button>
+          <label class="check"><input type="checkbox" id="watchjoin"> 観戦として参加</label>
+        </div>
+        <button class="btn" id="resume" hidden></button>
+      </div>
+      <div id="room" class="srow" hidden style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="srow"><span class="slabel">対戦コード</span><span class="roomcode" id="roomcode">----</span></div>
+        <div class="srow">
+          <button class="btn primary" id="copylink">招待リンクをコピー</button>
+          <span class="note" id="linktext" style="word-break:break-all"></span>
+        </div>
+        <div class="srow"><span class="slabel">自分の席</span>
+          <div class="seg" role="group" aria-label="自分の席"><button data-seat="p1">P1</button><button data-seat="p2">P2</button><button data-seat="watch">観戦</button></div>
+        </div>
+        <p class="note" id="roomnote"></p>
+        <button class="btn" id="leave">対戦から抜ける</button>
+      </div>
+    </div>
+  </section>
+
+  <main class="board" id="board">
+    <div class="mini" id="mini" role="button" tabindex="0" aria-label="相手の状況（タップで大きく表示）"></div>
+    <section class="player" id="panel-top"></section>
+    <section class="card" id="ctrl" aria-label="ターン進行">
+      <div class="turnline" id="turnline">先攻・後攻を決めましょう</div>
+      <div class="phases" role="group" aria-label="フェーズ">
+        <button data-phase="draw">ドロー</button><button data-phase="act">アクト</button><button data-phase="end">エンド</button>
+      </div>
+      <ul class="hint" id="hint"></ul>
+      <label class="check"><input type="checkbox" id="artist"> 手札からArtistを出した（1ターン1枚）</label>
+      <div class="ctrlrow">
+        <button class="die" id="die" aria-label="サイコロを振る">–</button>
+        <div class="judge" id="judge"><span>・4以上</span><span>・偶数</span><span class="by">タップで振る</span></div>
+        <button class="btn primary" id="endturn">ターン終了</button>
+      </div>
+    </section>
+    <section class="player" id="panel-bottom"></section>
+    <div class="more" id="more">
+      <div class="card" id="fpcard">
+        <h3>先攻・後攻</h3>
+        <div class="row"><button class="btn" id="decide">サイコロで決める</button><span class="note">大きい目のプレイヤーが選びます</span></div>
+        <div class="row" id="fpchoose" hidden></div>
+      </div>
+      <div class="card"><h3>ログ</h3><ul class="log" id="log"></ul></div>
+      <div class="card">
+        <details>
+          <summary>準備・リセット</summary>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+            <p class="note">手札の引き直し回数（単体で出せるArtistがいない場合）。少ない側は差分だけ追加で引けます。</p>
+            <div class="mull" id="mull"></div>
+            <button class="btn danger" id="reset">対戦をリセット</button>
+          </div>
+        </details>
+      </div>
+      <p class="foot">ルールは <a href="https://tcg.kamitsubaki.jp/" target="_blank" rel="noopener">公式サイト</a> を参照。非公式のファンメイドツールです。</p>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="peerjs.min.js"></script>
+<script>
+(() => {
+'use strict';
+const CAP = {vol:10, noise:5, a:5, b:5, o:5};
+const NAME = {vol:'VOL', noise:'VOLノイズ', a:'魔力α', b:'魔力β', o:'魔力Ω'};
+const PH = {draw:'ドロー', act:'アクト', end:'エンド'};
+const PFX = 'kmtbk-livecounter-';
+const other = p => p === 'p1' ? 'p2' : 'p1';
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+function defaults(){
+  return {
+    game:{turn:1, active:'p1', phase:'draw', artist:false, first:null, log:[], dice:null, fp:null},
+    p1:{name:'プレイヤー1', vol:0, noise:0, a:0, b:0, o:0, mull:0},
+    p2:{name:'プレイヤー2', vol:0, noise:0, a:0, b:0, o:0, mull:0},
+  };
+}
+function loadJSON(k){ try { const s = JSON.parse(store.get(k)); if (s && s.game && s.p1 && s.p2) return s; } catch(e){} return null; }
+
+// ---------- sanitize incoming data ----------
+const GAME_KEYS = ['turn','active','phase','artist','first','log','dice','fp'];
+const P_KEYS = ['name','vol','noise','a','b','o','mull'];
+function clean(k, o){
+  const out = {}; if (!o || typeof o !== 'object') return out;
+  if (k === 'game'){
+    for (const key of GAME_KEYS) if (key in o){
+      const v = o[key];
+      if (key === 'turn' && Number.isInteger(v) && v >= 1 && v < 10000) out.turn = v;
+      else if ((key === 'active') && (v === 'p1' || v === 'p2')) out[key] = v;
+      else if (key === 'first' && (v === null || v === 'p1' || v === 'p2')) out.first = v;
+      else if (key === 'phase' && PH[v]) out.phase = v;
+      else if (key === 'artist') out.artist = !!v;
+      else if (key === 'log' && Array.isArray(v)) out.log = v.slice(0,40).map(e => ({ts:String(e && e.ts || '').slice(0,5), m:String(e && e.m || '').slice(0,120)}));
+      else if (key === 'dice' && (v === null || (v && Number.isInteger(v.v) && v.v >= 1 && v.v <= 6))) out.dice = v ? {v:v.v, by:String(v.by||'').slice(0,20), n:Number(v.n)||0} : null;
+      else if (key === 'fp' && (v === null || (v && (v.w === 'p1' || v.w === 'p2')))) out.fp = v ? {p1:+v.p1||0, p2:+v.p2||0, w:v.w} : null;
+    }
+  } else if (k === 'p1' || k === 'p2'){
+    for (const key of P_KEYS) if (key in o){
+      const v = o[key];
+      if (key === 'name') out.name = String(v || '').slice(0,20);
+      else if (Number.isInteger(v)) out[key] = Math.max(0, Math.min(key === 'mull' ? 99 : CAP[key], v));
+    }
+  }
+  return out;
+}
+
+// ---------- state ----------
+let S = loadJSON('kt-offline') || defaults();
+let mode = 'offline';           // offline | online
+let role = null;                // host | guest | null
+let seat = 'p1';                // p1 | p2 | watch
+let roomCode = null;
+let peer = null, conn = null;   // guest connection
+const conns = new Set();        // host connections
+let netState = 'idle';          // idle | connecting | hosting | connected | lost | notfound | error
+let seq = 0, unacked = [], retries = 0, retryT = null;
+let bigP = 'p1';
+let viewMode = store.get('kt-view') || 'focus';
+
+function persist(){
+  if (mode === 'offline') store.set('kt-offline', JSON.stringify(S));
+  else if (role === 'host' && roomCode){ store.set('kt-host-state', JSON.stringify(S)); store.set('kt-last', JSON.stringify({role:'host', code:roomCode, at:Date.now()})); }
+}
+function patch(k, o){
+  if (mode === 'online' && (seat === 'watch')){ toast('観戦中は操作できません'); return; }
+  if (mode === 'online' && role === 'guest' && !(conn && conn.open)){ toast('接続されていません。再接続を待ってください'); return; }
+  Object.assign(S[k], o);
+  if (mode === 'online' && role === 'guest'){
+    const q = ++seq; unacked.push({q, k, o}); try { conn.send({t:'p', k, o, q}); } catch(e){}
+  } else if (mode === 'online' && role === 'host'){ broadcast(null, 0); }
+  persist(); render();
+}
+function addLog(msg){
+  const t = new Date(); const ts = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+  patch('game', {log:[{ts, m:msg}, ...(S.game.log || [])].slice(0, 40)});
+}
+
+// ---------- networking (PeerJS, host-authoritative) ----------
+function broadcast(from, q){
+  for (const c of conns){ if (!c.open) continue; try { c.send(c === from ? {t:'s', s:S, q} : {t:'s', s:S}); } catch(e){} }
+}
+function newCode(){ const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({length:4}, () => ch[Math.floor(Math.random()*ch.length)]).join(''); }
+function teardown(){
+  clearTimeout(retryT); retries = 0;
+  for (const c of conns){ try { c.close(); } catch(e){} } conns.clear();
+  if (conn){ try { conn.close(); } catch(e){} conn = null; }
+  if (peer){ try { peer.destroy(); } catch(e){} peer = null; }
+  role = null; roomCode = null; netState = 'idle'; unacked = [];
+}
+function startHost(code, resumeState){
+  if (typeof Peer === 'undefined'){ toast('通信ライブラリを読み込めませんでした'); return; }
+  teardown();
+  role = 'host'; roomCode = code; netState = 'connecting';
+  S = resumeState || defaults();
+  if (!resumeState) S.game.log = [{ts:new Date().toTimeString().slice(0,5), m:`対戦 ${code} を作成`}];
+  seat = store.get('kt-seat-host') || 'p1'; bigP = seat === 'watch' ? 'p1' : seat;
+  peer = new Peer(PFX + code, window.KT_PEER_OPTS || {});
+  peer.on('open', () => { netState = 'hosting'; retries = 0; persist(); render(); });
+  peer.on('connection', c => {
+    c.on('open', () => { conns.add(c); try { c.send({t:'s', s:S}); } catch(e){} render(); });
+    c.on('data', m => {
+      if (!m || m.t !== 'p' || !(m.k in S)) return;
+      Object.assign(S[m.k], clean(m.k, m.o)); persist(); broadcast(c, m.q|0); render();
+    });
+    c.on('close', () => { conns.delete(c); render(); });
+    c.on('error', () => { conns.delete(c); render(); });
+  });
+  peer.on('disconnected', () => { if (peer && !peer.destroyed){ netState = 'connecting'; render(); setTimeout(() => { try { peer.reconnect(); } catch(e){} }, 1000); } });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id'){
+      if (resumeState && retries++ < 8){ netState = 'connecting'; render(); const st = S; retryT = setTimeout(() => startHost(code, st), 3000); return; }
+      toast('このコードは使用中です。新しいコードで作り直します'); startHost(newCode(), null); return;
+    }
+    if (e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error'){ netState = 'lost'; render(); return; }
+    if (e.type === 'browser-incompatible'){ toast('このブラウザはオンライン対戦に対応していません'); netState = 'error'; render(); }
+  });
+  render();
+}
+function startGuest(code, asWatch){
+  if (typeof Peer === 'undefined'){ toast('通信ライブラリを読み込めませんでした'); return; }
+  teardown();
+  role = 'guest'; roomCode = code; netState = 'connecting';
+  seat = asWatch ? 'watch' : (store.get('kt-seat-guest') || 'p2');
+  if (seat !== 'watch') bigP = seat;
+  store.set('kt-last', JSON.stringify({role:'guest', code, at:Date.now()}));
+  peer = window.KT_PEER_OPTS ? new Peer(window.KT_PEER_OPTS) : new Peer();
+  peer.on('open', () => dial());
+  peer.on('disconnected', () => { if (peer && !peer.destroyed) setTimeout(() => { try { peer.reconnect(); } catch(e){} }, 1000); });
+  peer.on('error', e => {
+    if (e.type === 'peer-unavailable'){ netState = retries > 0 ? 'lost' : 'notfound'; render(); scheduleRetry(); return; }
+    if (e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error'){ netState = 'lost'; render(); scheduleRetry(); return; }
+    if (e.type === 'browser-incompatible'){ toast('このブラウザはオンライン対戦に対応していません'); netState = 'error'; render(); }
+  });
+  render();
+}
+function dial(){
+  if (!peer || peer.destroyed || !roomCode) return;
+  const c = peer.connect(PFX + roomCode, {reliable:true});
+  conn = c;
+  c.on('open', () => { netState = 'connected'; retries = 0; render(); });
+  c.on('data', m => {
+    if (!m || m.t !== 's' || !m.s) return;
+    const s = defaults();
+    for (const k of ['game','p1','p2']) Object.assign(s[k], clean(k, m.s[k]));
+    if (m.q) unacked = unacked.filter(u => u.q > m.q);
+    for (const u of unacked) Object.assign(s[u.k], u.o);
+    S = s; render();
+  });
+  c.on('close', () => { if (conn === c){ netState = 'lost'; render(); scheduleRetry(); } });
+  c.on('error', () => {});
+}
+function scheduleRetry(){
+  clearTimeout(retryT);
+  if (role !== 'guest') return;
+  if (retries++ > 40){ netState = 'lost'; render(); return; }
+  retryT = setTimeout(() => { if (peer && peer.disconnected && !peer.destroyed){ try { peer.reconnect(); } catch(e){} } dial(); }, Math.min(8000, 1500 + retries * 500));
+}
+
+// ---------- game actions ----------
+const pn = p => S[p].name || (p === 'p1' ? 'プレイヤー1' : 'プレイヤー2');
+function adjust(p, k, d){
+  const s = S[p], v = s[k] || 0;
+  if (d > 0 && k === 'vol' && s.noise > 0){
+    const use = Math.min(d, s.noise), gain = d - use;
+    patch(p, {noise: s.noise - use, vol: Math.min(CAP.vol, v + gain)});
+    addLog(`${pn(p)}：VOL獲得 → ノイズ${use}枚を手札へ（残り${s.noise}）`);
+    return;
+  }
+  if (d > 0 && v >= CAP[k]){ toast(`${NAME[k]}は上限${CAP[k]}です（生成できない効果は失敗扱い）`); buzz(); return; }
+  if (d < 0 && v <= 0){ toast(`${NAME[k]}は0です`); buzz(); return; }
+  const nv = Math.max(0, Math.min(CAP[k], v + d));
+  patch(p, {[k]: nv});
+  const verb = k === 'vol' ? (d > 0 ? '獲得' : '減少') : k === 'noise' ? (d > 0 ? '配置' : '除去') : (d > 0 ? '生成' : '消費');
+  addLog(`${pn(p)}：${NAME[k]} ${verb} ${d > 0 ? '+' : ''}${d} → ${nv}`);
+}
+function setVal(p, k, v){
+  const cur = S[p][k] || 0; const nv = Math.max(0, cur === v ? v - 1 : v);
+  if (nv === cur) return;
+  patch(p, {[k]: nv}); addLog(`${pn(p)}：${NAME[k]} を ${nv} に`);
+}
+function setPhase(ph){ if (S.game.phase === ph) return; patch('game', {phase: ph}); addLog(`${pn(S.game.active)}：${PH[ph]}フェーズ`); }
+function endTurn(){
+  const g = S.game, nx = other(g.active);
+  patch('game', {active: nx, turn: (g.turn || 1) + 1, phase: 'draw', artist: false});
+  addLog(`${pn(g.active)} ターン終了 → ${pn(nx)} の番`);
+  if (mode === 'offline' && $('follow').checked) bigP = nx;
+  render();
+}
+function roll(){
+  if (mode === 'online' && seat === 'watch'){ toast('観戦中は操作できません'); return; }
+  const v = 1 + Math.floor(Math.random() * 6);
+  const by = mode === 'online' ? pn(seat) : pn(S.game.active);
+  patch('game', {dice:{v, by, n:Date.now()}}); addLog(`${by}：サイコロ ${v}`);
+}
+function decideFirst(){
+  let a, b; do { a = 1 + Math.floor(Math.random()*6); b = 1 + Math.floor(Math.random()*6); } while (a === b);
+  const w = a > b ? 'p1' : 'p2';
+  patch('game', {fp:{p1:a, p2:b, w}}); addLog(`先攻決め：${pn('p1')} ${a} / ${pn('p2')} ${b} → ${pn(w)} が選択`);
+}
+function chooseFirst(p){
+  patch('game', {first:p, active:p, turn:1, phase:'draw', artist:false, fp:null});
+  addLog(`先攻：${pn(p)}　後攻：${pn(other(p))}`);
+  if (mode === 'offline' && $('follow').checked) bigP = p;
+  render();
+}
+let armed = null;
+function resetMatch(btn){
+  if (!armed){ btn.classList.add('armed'); btn.textContent = 'もう一度押すとリセット'; armed = setTimeout(() => { armed = null; btn.classList.remove('armed'); btn.textContent = '対戦をリセット'; }, 3000); return; }
+  clearTimeout(armed); armed = null; btn.classList.remove('armed'); btn.textContent = '対戦をリセット';
+  const d = defaults();
+  for (const p of ['p1','p2']){ d[p].name = S[p].name; patch(p, d[p]); }
+  patch('game', d.game); addLog('対戦をリセットしました');
+}
+function buzz(){ try { navigator.vibrate && navigator.vibrate(30); } catch(e){} }
+
+// ---------- panels ----------
+function buildPanel(el){
+  el.innerHTML = `
+    <div class="phead">
+      <input class="pname" data-f="name" aria-label="プレイヤー名" maxlength="20" enterkeyhint="done">
+      <span class="chip role" data-f="role"></span>
+      <span class="chip me" data-f="me" hidden>あなた</span>
+      <span class="chip turn" data-f="turnchip" hidden>手番</span>
+    </div>
+    <div>
+      <div class="sec-label"><span>VOL</span><span class="num"><span data-f="voln">0</span><small> / 10</small></span></div>
+      <div class="voltrack">${Array.from({length:10},(_,i)=>`<button class="vp" data-act="set" data-k="vol" data-v="${i+1}" aria-label="VOL ${i+1}">${i+1}</button>`).join('')}</div>
+      <div class="row" style="margin-top:8px">
+        <span class="step big"><button data-act="adj" data-k="vol" data-d="-1" aria-label="VOL -1">−</button><button data-act="adj" data-k="vol" data-d="1" aria-label="VOL +1">＋</button></span>
+        <span class="step"><button class="txt" data-act="adj" data-k="vol" data-d="2" aria-label="VOL +2">+2</button></span>
+      </div>
+    </div>
+    <div>
+      <div class="sec-label"><span>VOLノイズ（裏・最大5）</span><span class="num" style="font-size:24px" data-f="noisen">0</span></div>
+      <div class="row" style="margin-top:6px;justify-content:space-between">
+        <div class="noise">${Array.from({length:5},(_,i)=>`<button class="np" data-act="set" data-k="noise" data-v="${i+1}" aria-label="ノイズ ${i+1}"></button>`).join('')}</div>
+        <span class="step"><button data-act="adj" data-k="noise" data-d="-1" aria-label="ノイズ -1">−</button><button data-act="adj" data-k="noise" data-d="1" aria-label="ノイズ +1">＋</button></span>
+      </div>
+    </div>
+    <div>
+      <div class="sec-label"><span>魔力（各上限5）</span></div>
+      <div class="mana">
+        ${[['a','α'],['b','β'],['o','Ω']].map(([k,g])=>`
+        <div class="mrow c-${k}">
+          <span class="mname">${g}</span>
+          <span class="tokens">${Array.from({length:5},(_,i)=>`<button class="tk" data-act="set" data-k="${k}" data-v="${i+1}" aria-label="魔力${g} ${i+1}"></button>`).join('')}</span>
+          <span class="mcount" data-f="${k}n">0</span>
+          <span class="step"><button data-act="adj" data-k="${k}" data-d="-1" aria-label="魔力${g}を消費">−</button><button data-act="adj" data-k="${k}" data-d="1" aria-label="魔力${g}を生成">＋</button></span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="win" data-f="win" hidden><div><h2>LIVE 成功</h2><p data-f="wintext"></p></div></div>`;
+}
+function roleLabel(p){ const g = S.game; return g.first ? (g.first === p ? '先攻' : '後攻') : p.toUpperCase(); }
+function updatePanel(el, p){
+  el.dataset.p = p;
+  const s = S[p], g = S.game, q = f => el.querySelector(`[data-f="${f}"]`);
+  const nameEl = q('name'); if (document.activeElement !== nameEl) nameEl.value = s.name || '';
+  nameEl.readOnly = mode === 'online' && seat === 'watch';
+  q('role').textContent = roleLabel(p);
+  q('me').hidden = !(mode === 'online' && seat === p);
+  const isTurn = !!(g.first && g.active === p);
+  q('turnchip').hidden = !isTurn; el.classList.toggle('turn', isTurn);
+  q('voln').textContent = s.vol; q('noisen').textContent = s.noise;
+  el.querySelectorAll('.vp').forEach((b,i) => b.classList.toggle('on', i < s.vol));
+  el.querySelectorAll('.np').forEach((b,i) => b.classList.toggle('on', i < s.noise));
+  for (const k of ['a','b','o']){
+    el.querySelectorAll(`.tk[data-k="${k}"]`).forEach((b,i) => b.classList.toggle('on', i < s[k]));
+    const n = q(k + 'n'); n.textContent = s[k]; n.classList.toggle('full', s[k] >= 5);
+  }
+  q('win').hidden = s.vol < 10;
+  q('wintext').textContent = `${s.name} が VOL 10 点を獲得しました`;
+}
+function updateMini(p){
+  const s = S[p], g = S.game, el = $('mini');
+  const isTurn = !!(g.first && g.active === p);
+  el.classList.toggle('turn', isTurn);
+  el.innerHTML = `<span class="mname">${esc(s.name)}</span>
+    <span class="chip role">${roleLabel(p)}</span>${isTurn ? '<span class="chip turn">手番</span>' : ''}${mode === 'online' && seat === p ? '<span class="chip me">あなた</span>' : ''}
+    <span class="stats">
+      <span class="st vol"><small>VOL</small>${s.vol}</span>
+      <span class="st"><small>ノイズ</small>${s.noise}</span>
+      <span class="st a"><small>α</small>${s.a}</span>
+      <span class="st b"><small>β</small>${s.b}</span>
+      <span class="st o"><small>Ω</small>${s.o}</span>
+    </span>
+    <span class="chip">⇅ 切替</span>
+    <span class="volbar"><i style="width:${s.vol*10}%"></i></span>`;
+}
+
+// ---------- render ----------
+function hintFor(g){
+  if (!g.first) return ['下の「先攻・後攻」でサイコロを振り、勝った方が<b>先攻か後攻を選ぶ</b>','お互いに<b>7枚</b>引く。単体で出せるArtistがいなければ手札を見せて<b>引き直し</b>'];
+  if (g.phase === 'draw') return g.turn === 1 ? ['<b>先攻1ターン目はドローしません</b>'] : ['山札から<b>1枚</b>引く（引けなければ<b>敗北</b>）'];
+  if (g.phase === 'act') return ['Artist：手札から<b>1ターン1枚</b>、Standby（横）で。センターが空なら必ずセンター','Activeの各Artistで<b>Song 1回</b>（タイプ一致／ALL）。センターなら<b>センター効果</b>も','特殊能力・Magic・Directionは好きな順で（Directionは最大5・同名1枚）'];
+  return ['使ったSongを<b>全てトラッシュ</b>','StandbyのArtistを<b>Active（縦）</b>に','使ったDirectionの向きを戻す'];
+}
+let lastDie = null;
+function render(){
+  const app = $('app');
+  app.classList.toggle('view-focus', viewMode === 'focus');
+  app.classList.toggle('view-equal', viewMode === 'equal');
+  app.classList.toggle('flip', $('flip').checked);
+  $('v-focus').setAttribute('aria-pressed', String(viewMode === 'focus'));
+  $('v-equal').setAttribute('aria-pressed', String(viewMode === 'equal'));
+  $('m-off').setAttribute('aria-pressed', String(mode === 'offline'));
+  $('m-on').setAttribute('aria-pressed', String(mode === 'online'));
+  $('online').hidden = mode !== 'online';
+
+  const bottom = bigP, top = other(bottom);
+  updatePanel($('panel-bottom'), bottom); updatePanel($('panel-top'), top); updateMini(top);
+  $('panel-top').setAttribute('aria-label', pn(top)); $('panel-bottom').setAttribute('aria-label', pn(bottom));
+
+  const g = S.game;
+  $('turnline').innerHTML = g.first ? `${esc(pn(g.active))} の番<small>${g.active === g.first ? '先攻' : '後攻'} ${Math.ceil((g.turn||1)/2)}ターン目</small>` : '先攻・後攻を決めましょう';
+  document.querySelectorAll('.phases button').forEach(b => { b.setAttribute('aria-pressed', String(!!g.first && b.dataset.phase === g.phase)); b.disabled = !g.first; });
+  $('hint').innerHTML = hintFor(g).map(h => `<li>${h}</li>`).join('');
+  $('artist').checked = !!g.artist; $('artist').disabled = !g.first;
+  $('endturn').disabled = !g.first;
+
+  const d = g.dice, die = $('die');
+  if (d && d.n !== lastDie){ if (lastDie !== null){ die.classList.remove('rolling'); void die.offsetWidth; die.classList.add('rolling'); } lastDie = d.n; }
+  die.textContent = d ? d.v : '–';
+  const js = $('judge').children;
+  js[0].className = d && d.v >= 4 ? 'y' : ''; js[0].textContent = (d && d.v >= 4 ? '✓ ' : '・') + '4以上';
+  js[1].className = d && d.v % 2 === 0 ? 'y' : ''; js[1].textContent = (d && d.v % 2 === 0 ? '✓ ' : '・') + '偶数';
+  js[2].textContent = d ? `${d.by} が振りました` : 'タップで振る';
+
+  $('fpcard').hidden = !!g.first && !g.fp;
+  const fc = $('fpchoose');
+  if (g.fp){
+    fc.hidden = false;
+    fc.innerHTML = `<span class="note">${esc(pn('p1'))} ${g.fp.p1} / ${esc(pn('p2'))} ${g.fp.p2} → <b style="color:var(--fg)">${esc(pn(g.fp.w))}</b> が選択：</span>
+      <button class="btn primary" data-first="${g.fp.w}">${esc(pn(g.fp.w))}が先攻</button><button class="btn" data-first="${other(g.fp.w)}">${esc(pn(g.fp.w))}が後攻</button>`;
+  } else { fc.hidden = true; fc.innerHTML = ''; }
+
+  $('log').innerHTML = (g.log || []).map(e => `<li><time>${esc(e.ts)}</time><span>${esc(e.m)}</span></li>`).join('') || '<li><span>まだ記録はありません</span></li>';
+  const bonus = p => { const a = S[p].mull||0, b = S[other(p)].mull||0; return a < b ? `+${b-a}枚` : ''; };
+  $('mull').innerHTML = ['p1','p2'].map(p => `<span>${esc(pn(p))}　<b style="color:var(--gold)">${bonus(p)}</b></span><span class="mcount" style="font-size:22px">${S[p].mull||0}</span><span class="step"><button data-mull="${p}" data-d="-1" aria-label="引き直し -1">−</button><button data-mull="${p}" data-d="1" aria-label="引き直し +1">＋</button></span>`).join('');
+
+  // network UI
+  const pill = $('netpill');
+  const states = {
+    idle:['', mode === 'online' ? '未接続' : 'オフライン'], connecting:['wait','接続中…'], hosting:['on', `${roomCode}・相手 ${conns.size ? '接続中' : '待ち'}`],
+    connected:['on', `${roomCode} に接続中`], lost:['wait','再接続中…'], notfound:['bad','対戦が見つかりません'], error:['bad','接続できません']
+  };
+  const [cls, txt] = mode === 'online' ? (states[netState] || states.idle) : ['', '1台モード'];
+  pill.innerHTML = `<span class="dot ${cls}"></span>${esc(txt)}`;
+  $('lobby').hidden = !!role; $('room').hidden = !role;
+  if (role){
+    $('roomcode').textContent = roomCode || '----';
+    $('linktext').textContent = inviteURL();
+    document.querySelectorAll('[data-seat]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.seat === seat)));
+    $('roomnote').textContent = role === 'host'
+      ? `あなたがこの対戦のホストです。このページを閉じると対戦が止まります（開き直せば再開できます）。接続中の相手：${conns.size}人`
+      : (netState === 'notfound' ? 'コードが合っているか、作成した人がページを開いたままか確認してください。自動で再試行します。' : 'ホストの端末と直接つながっています。');
+  }
+  const last = (() => { try { return JSON.parse(store.get('kt-last')); } catch(e){ return null; } })();
+  const rs = $('resume');
+  if (!role && last && last.code && Date.now() - (last.at||0) < 12*3600*1000){
+    rs.hidden = false; rs.textContent = `前回の対戦 ${last.code} に${last.role === 'host' ? '戻る（ホスト）' : '再参加'}`;
+  } else rs.hidden = true;
+}
+function inviteURL(){ const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('room', roomCode || ''); return u.toString(); }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let toastT;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+
+// ---------- events ----------
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const panel = b.closest('.player');
+  if (panel && b.dataset.act){
+    const p = panel.dataset.p;
+    if (b.dataset.act === 'adj') adjust(p, b.dataset.k, +b.dataset.d); else setVal(p, b.dataset.k, +b.dataset.v);
+    return;
+  }
+  if (b.dataset.phase) return setPhase(b.dataset.phase);
+  if (b.dataset.first) return chooseFirst(b.dataset.first);
+  if (b.dataset.mull){ const p = b.dataset.mull, v = Math.max(0, (S[p].mull||0) + (+b.dataset.d)); patch(p, {mull:v}); addLog(`${pn(p)}：引き直し ${v}回`); return; }
+  if (b.dataset.seat){
+    seat = b.dataset.seat; store.set(role === 'host' ? 'kt-seat-host' : 'kt-seat-guest', seat);
+    if (seat !== 'watch') bigP = seat; render(); return;
+  }
+});
+document.addEventListener('change', e => {
+  if (e.target.classList.contains('pname')){
+    const p = e.target.closest('.player').dataset.p;
+    patch(p, {name: e.target.value.trim().slice(0,20) || (p === 'p1' ? 'プレイヤー1' : 'プレイヤー2')});
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList.contains('pname')) e.target.blur(); });
+const swapBig = () => { bigP = other(bigP); render(); };
+$('mini').addEventListener('click', swapBig);
+$('mini').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); swapBig(); } });
+$('endturn').onclick = endTurn;
+$('die').onclick = roll;
+$('decide').onclick = decideFirst;
+$('reset').onclick = e => resetMatch(e.currentTarget);
+$('artist').onchange = e => { patch('game', {artist:e.target.checked}); if (e.target.checked) addLog(`${pn(S.game.active)}：Artistを登場させた`); };
+$('setbtn').onclick = () => { const s = $('settings'); s.hidden = !s.hidden; $('setbtn').setAttribute('aria-expanded', String(!s.hidden)); };
+$('v-focus').onclick = () => { viewMode = 'focus'; store.set('kt-view', viewMode); render(); };
+$('v-equal').onclick = () => { viewMode = 'equal'; store.set('kt-view', viewMode); render(); };
+$('flip').onchange = e => { store.set('kt-flip', e.target.checked ? '1' : ''); render(); };
+$('follow').onchange = e => store.set('kt-follow', e.target.checked ? '1' : '0');
+$('m-off').onclick = () => {
+  if (mode === 'offline') return;
+  teardown(); mode = 'offline'; seat = 'p1'; S = loadJSON('kt-offline') || defaults(); bigP = S.game.first && $('follow').checked ? S.game.active : 'p1';
+  store.set('kt-mode', 'offline'); render();
+};
+$('m-on').onclick = () => { if (mode === 'online') return; persist(); mode = 'online'; store.set('kt-mode', 'online'); S = defaults(); render(); };
+$('host').onclick = () => startHost(newCode(), null);
+$('join').onclick = () => {
+  const c = $('joincode').value.trim().toUpperCase();
+  if (!/^[A-Z0-9]{4}$/.test(c)){ toast('4文字の対戦コードを入力してください'); return; }
+  startGuest(c, $('watchjoin').checked);
+};
+$('joincode').addEventListener('keydown', e => { if (e.key === 'Enter') $('join').click(); });
+$('resume').onclick = () => {
+  let last; try { last = JSON.parse(store.get('kt-last')); } catch(e){}
+  if (!last) return;
+  if (last.role === 'host') startHost(last.code, loadJSON('kt-host-state')); else startGuest(last.code, false);
+};
+$('leave').onclick = () => { teardown(); store.del('kt-last'); S = defaults(); render(); toast('対戦から抜けました'); };
+$('copylink').onclick = async () => {
+  const url = inviteURL();
+  try { await navigator.clipboard.writeText(url); toast('招待リンクをコピーしました'); }
+  catch(e){ const r = document.createRange(); r.selectNodeContents($('linktext')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('リンクを選択しました。長押しでコピーしてください'); }
+  if (navigator.share){ try { await navigator.share({title:'神椿 LIVEカウンター', text:`対戦コード ${roomCode}`, url}); } catch(e){} }
+};
+
+// wake lock
+let wl = null;
+async function setWake(on){
+  try {
+    if (on){ wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); }
+    else if (wl){ await wl.release(); wl = null; }
+  } catch(e){ if (on){ toast('この端末では画面の常時点灯を設定できません'); $('wake').checked = false; } }
+}
+if (!('wakeLock' in navigator)) $('wakewrap').hidden = true;
+$('wake').onchange = e => setWake(e.target.checked);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && $('wake').checked && !wl) setWake(true); });
+
+// ---------- boot ----------
+buildPanel($('panel-top')); buildPanel($('panel-bottom'));
+$('flip').checked = store.get('kt-flip') === '1';
+$('follow').checked = store.get('kt-follow') !== '0';
+bigP = S.game.first && $('follow').checked ? S.game.active : 'p1';
+const qs = new URLSearchParams(location.search);
+const qroom = (qs.get('room') || '').toUpperCase();
+if (/^[A-Z0-9]{4}$/.test(qroom)){
+  mode = 'online'; S = defaults(); $('joincode').value = qroom;
+  $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true');
+  render(); startGuest(qroom, false);
+  history.replaceState(null, '', location.pathname);
+} else {
+  if (store.get('kt-mode') === 'online'){ mode = 'online'; S = defaults(); }
+  if (!store.get('kt-seen')){ $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
+  render();
+}
+})();
+</script>
+</body>
+</html>
