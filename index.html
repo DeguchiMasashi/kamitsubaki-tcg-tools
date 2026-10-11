@@ -410,6 +410,14 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 #setbtn2,#compactbtn2{display:none}
 #undo:disabled{opacity:.35}
 .tbtn{margin-left:8px;border:1px solid var(--gold);background:var(--gold);color:var(--ink);border-radius:8px;padding:4px 10px;font-weight:700;font-size:13px}
+/* スマホ・タブレット縦向き（簡潔表示）：VOLを5個×2段にして丸を大きく */
+@media (max-width:999px){
+  .compact .crows{grid-template-rows:repeat(6,minmax(0,1fr))}
+  .compact .crow[data-tk="vol"]{grid-row:span 2}
+  .compact .crow[data-tk="vol"] .cpips{display:grid;grid-template-columns:repeat(5,auto);grid-template-rows:repeat(2,auto);justify-content:start;align-content:center;gap:4px;height:100%;container-type:size}
+  .compact .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 16px) / 5), calc((100cqh - 4px) / 2), 46px);height:auto;max-width:none;max-height:none;aspect-ratio:1;font-size:13px;font-weight:700}
+}
+@media (max-width:380px){.compact #ctrl{gap:5px}.compact #endturn{white-space:nowrap;padding:6px 8px}.compact #undo,.compact #reset2{padding:6px 8px;font-size:12px}}
 /* スマホ横向き（簡潔表示）：上部バーを省き、各プレイヤーを2列に */
 @media (orientation:landscape) and (max-height:540px){
   .wrap.compact{height:100vh;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:hidden;padding-block:6px;gap:6px}
