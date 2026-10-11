@@ -1410,7 +1410,7 @@ function playDice(d){
     m2.onfinish = showResult;
   };
   a.onfinish = () => {
-    if (settled) return; settled = true; buzz();
+    if (settled) return; settled = true; buzz(); stopShuffle();   // 転がり終わったら後ろのボタンにも出目を表示
     diceSkip = () => { diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); toCenter(); diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); };
     diceTimer = setTimeout(toCenter, 550);
   };
