@@ -1487,6 +1487,22 @@ document.addEventListener('visibilitychange', () => { if (wantWake()) setWake(tr
 document.addEventListener('pointerdown', () => { if (wantWake()) setWake(true, true); }, {passive:true});
 if (wantWake()) setWake(true, true);
 
+// 簡潔表示（スクロールなし）のとき、アプリ復帰やアドレスバーの伸縮で画面がずれたら一番上に戻す
+const pinTop = () => {
+  if (!compact || getComputedStyle(document.body).overflowY !== 'hidden') return;
+  if (scrollY || scrollX || document.documentElement.scrollTop || document.body.scrollTop){
+    scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0;
+  }
+};
+const pinSoon = () => { pinTop(); setTimeout(pinTop, 120); setTimeout(pinTop, 500); };
+addEventListener('scroll', pinTop, {passive:true});
+addEventListener('resize', pinSoon);
+addEventListener('orientationchange', pinSoon);
+addEventListener('pageshow', pinSoon);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pinSoon(); });
+if (window.visualViewport) visualViewport.addEventListener('resize', pinSoon);
+document.addEventListener('focusout', () => setTimeout(pinTop, 100));
+
 // ---------- boot ----------
 setBtnLabel($('undo'), '↶ 戻す'); setBtnLabel($('reset2'), 'リセット'); setBtnLabel($('reset'), '対戦をリセット');
 buildPanel($('panel-top')); buildPanel($('panel-bottom'));
