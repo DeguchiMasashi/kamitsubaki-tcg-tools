@@ -494,6 +494,12 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .compact .crow:not([data-tk="vol"]) .cp{flex:0 0 auto;width:min(calc((100cqw - 16px) / 5), 100cqh, 46px);height:auto;max-width:none;max-height:none;aspect-ratio:1}
   .compact .crow[data-tk="noise"] .cp{width:min(calc((100cqw - 16px) / 5), 75cqh, 34px);aspect-ratio:3/4}
 }
+/* PC（横並び）の簡潔表示：中央の列は2段（サイコロ＋ターン終了／戻す＋リセット） */
+@media (min-width:1000px){
+  .compact #ctrl{grid-template-areas:"die end end" "undo undo reset"!important;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)!important}
+  .compact #endturn{white-space:nowrap}
+  .compact #undo,.compact #reset2{white-space:nowrap}
+}
 </style>
 </head>
 <body>
