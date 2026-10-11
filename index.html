@@ -501,6 +501,17 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .compact #undo,.compact #reset2{white-space:nowrap}
 }
 .swipe-on #die{touch-action:none}
+.dpick{position:absolute;left:0;right:0;bottom:calc(28px + env(safe-area-inset-bottom,0px));text-align:center;color:var(--fg);font-size:14px;letter-spacing:.08em;display:none}
+.dpick small{display:block;color:var(--muted);font-size:11px;margin-top:4px;letter-spacing:0}
+.dstage.picking .dpick{display:block}
+.dstage.picking .dmover{cursor:grab;touch-action:none}
+.dstage.grabbing .dmover{cursor:grabbing}
+.dstage.picking .dhint{display:none}
+.dstage.centered .dres-main{top:calc(var(--by,50%) + var(--ds) * 1.05)}
+.dstage.centered .dres-flip{bottom:calc(100% - var(--by,50%) + var(--ds) * 1.05)}
+.dstage.centered .dres{font-size:15px;padding:10px 18px}
+.dstage.centered .dres b{font-size:36px}
+.dstage.picking .dveil,.dstage.centered .dveil{background:rgba(8,6,16,.62);transition:background .3s}
 </style>
 </head>
 <body>
@@ -582,7 +593,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
       </div>
       <div class="optlist">
         <label class="check" id="wakewrap"><input type="checkbox" id="wake"> 画面を消さない</label>
-        <label class="check"><input type="checkbox" id="swipe"> <span>サイコロをスワイプで投げる<small class="note">サイコロのボタンから指ではじいた方向に転がります（タップでも振れます）</small></span></label>
+        <label class="check"><input type="checkbox" id="swipe"> <span>サイコロを画面に出してスワイプで投げる<small class="note">サイコロのボタンを押すと画面にサイコロが出ます。指ではじいた方向に転がります</small></span></label>
       </div>
     </div>
     <button class="btn" id="setclose">閉じる</button>
@@ -1203,23 +1214,83 @@ function buildDiceStage(){
     <div class="dmover"><div class="dscene"><div class="dcube">
       ${[1,2,3,4,5,6].map(v => `<div class="dface f${v}">${pipSVG(v)}</div>`).join('')}
     </div></div></div>
-    <div class="dresult"><div class="dres dres-flip"></div><div class="dres dres-main"></div><div class="dhint">タップで閉じる</div></div>`;
+    <div class="dresult"><div class="dres dres-flip"></div><div class="dres dres-main"></div><div class="dhint">タップで閉じる</div></div>
+    <div class="dpick">サイコロをはじいて投げる<small>サイコロの外側をタップするとやめます</small></div>`;
   document.body.appendChild(diceStage);
-  diceStage.addEventListener('click', () => {
+  diceStage.addEventListener('click', e => {
+    if (diceStage.classList.contains('picking')){ if (!e.target.closest('.dmover')) closeDice(); return; }
     if (diceStage.classList.contains('landed')) return closeDice();
-    diceAnims.forEach(a => { try { a.finish(); } catch(e){} });
+    if (diceSkip){ const f = diceSkip; diceSkip = null; f(); return; }
+    if (e.target.closest('.dmover')) return;          // 投げた直後のタップは無視
+    diceAnims.forEach(a => { try { a.finish(); } catch(x){} });
   });
+  // つかんで、はじいて投げる
+  const mover = diceStage.querySelector('.dmover');
+  let drag = null;
+  mover.addEventListener('pointerdown', e => {
+    if (!diceStage.classList.contains('picking')) return;
+    e.preventDefault();
+    diceAnims.forEach(a => { try { a.cancel(); } catch(x){} }); diceAnims = [];
+    const now = performance.now();
+    drag = {id: e.pointerId, dx: pickPos.x - e.clientX, dy: pickPos.y - e.clientY, sx: e.clientX, sy: e.clientY, pts: [{x: pickPos.x, y: pickPos.y, t: now}]};
+    try { mover.setPointerCapture(e.pointerId); } catch(x){}
+    diceStage.classList.add('grabbing');
+  });
+  mover.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const x = e.clientX + drag.dx, y = e.clientY + drag.dy;
+    placePick(x, y);
+    drag.pts.push({x, y, t: performance.now()}); if (drag.pts.length > 20) drag.pts.shift();
+  });
+  const release = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null; diceStage.classList.remove('grabbing');
+    const now = performance.now(), recent = d.pts.filter(q => now - q.t < 110), a = recent[0] || d.pts[0];
+    let vx = (pickPos.x - a.x) / Math.max(16, now - a.t), vy = (pickPos.y - a.y) / Math.max(16, now - a.t);
+    if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 12 || Math.hypot(vx, vy) < 0.25){
+      const ang = Math.random() * Math.PI * 2; vx = Math.cos(ang) * 1.1; vy = Math.sin(ang) * 1.1;   // タップや弱いはじきは軽く投げる
+    }
+    pendingThrow = {x: pickPos.x, y: pickPos.y, vx, vy, at: Date.now()};
+    diceStage.classList.remove('picking');
+    roll();
+    if (pendingThrow){ pendingThrow = null; closeDice(); }     // 振れなかった（観戦中など）
+  };
+  mover.addEventListener('pointerup', release);
+  mover.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag.id){ drag = null; diceStage.classList.remove('grabbing'); } });
 }
 function closeDice(){
   if (!diceStage || diceStage.hidden) return;
   clearTimeout(diceTimer); diceAnims.forEach(a => { try { a.cancel(); } catch(e){} }); diceAnims = [];
-  diceStage.classList.remove('on', 'landed'); diceStage.hidden = true;
+  diceSkip = null; diceStage.classList.remove('on', 'landed', 'picking', 'grabbing', 'centered'); diceStage.hidden = true;
+}
+const diceSize = () => Math.round(Math.min(96, Math.max(64, Math.min(innerWidth, innerHeight) * 0.2)));
+const pickPos = {x: 0, y: 0};
+function placePick(x, y){
+  const ds = diceSize(), half = ds / 2;
+  x = Math.min(innerWidth - half, Math.max(half, x)); y = Math.min(innerHeight - half, Math.max(half, y));
+  pickPos.x = x; pickPos.y = y;
+  diceStage.querySelector('.dmover').style.transform = `translate(${x - half}px, ${y - half}px)`;
+  const sh = diceStage.querySelector('.dshadow'); sh.style.transform = `translate(${x - half}px, ${y + half * 0.75}px)`; sh.style.opacity = .85;
+}
+function openDicePicker(){
+  if (mode === 'online' && seat === 'watch'){ toast('観戦中は操作できません'); return; }
+  if (!diceStage) buildDiceStage();
+  closeDice();
+  diceStage.style.setProperty('--ds', diceSize() + 'px');
+  diceStage.querySelector('.dres-main').innerHTML = ''; diceStage.querySelector('.dres-flip').hidden = true;
+  diceStage.hidden = false; void diceStage.offsetWidth; diceStage.classList.add('on', 'picking');
+  placePick(innerWidth / 2, innerHeight / 2);
+  const cube = diceStage.querySelector('.dcube'), last = (S.game.dice && S.game.dice.v) || 1, [fx, fy] = FACE_ROT[last];
+  const base = `rotateX(${fx - 20}deg) rotateY(${fy + 28}deg)`;
+  cube.style.transform = base;
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+    diceAnims.push(cube.animate([{transform: base}, {transform: `rotateX(${fx - 28}deg) rotateY(${fy + 40}deg)`}, {transform: base}], {duration: 1800, iterations: Infinity, easing: 'ease-in-out'}));
 }
 function playDice(d){
   if (!diceStage) buildDiceStage();
   closeDice();
   const v = d.v, W = innerWidth, H = innerHeight;
-  const ds = Math.round(Math.min(96, Math.max(64, Math.min(W, H) * 0.2)));
+  const ds = diceSize();
   diceStage.style.setProperty('--ds', ds + 'px');
   // 転がしてきた方向：対面表示で奥の人が振ったら上から、それ以外は下から
   const topP = $('panel-top').dataset.p;
@@ -1235,10 +1306,13 @@ function playDice(d){
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [fx, fy] = FACE_ROT[v], tilt = rnd(-14, 14);
   const finalT = `rotateZ(${tilt + 360 * 2}deg) rotateX(${fx + 360 * 3}deg) rotateY(${fy + 360 * 2}deg)`;
-  const land = () => { if (diceStage.classList.contains('landed')) return; diceStage.classList.add('landed'); buzz(); };
+  let settled = false;
+  const showResult = () => { if (!diceStage.classList.contains('landed')){ diceStage.classList.add('landed'); } };
+  const land = () => { if (settled) return; settled = true; buzz(); showResult(); };
   if (reduce){
     diceStage.style.setProperty('--bx', cx + 'px'); diceStage.style.setProperty('--by', cy + 'px');
-    mover.style.transform = `translate(${cx - half}px, ${cy - half}px)`; cube.style.transform = finalT;
+    diceStage.classList.add('centered');
+    mover.style.transform = `translate(${cx - half}px, ${cy - half}px) scale(1.5)`; cube.style.transform = finalT;
     shadow.style.transform = `translate(${cx - half}px, ${cy + half * 0.75}px)`; land(); return;
   }
   const dur = 2000;
@@ -1284,8 +1358,23 @@ function playDice(d){
     {duration: dur, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards'});
   diceAnims.push(a);
   setTimeout(() => buzz(), dur * 0.3); setTimeout(() => buzz(), dur * 0.6);
-  a.onfinish = land;
+  // 止まったら少し止めてから、中央へ大きく移動して結果を表示
+  const toCenter = () => {
+    clearTimeout(diceTimer); diceSkip = null;
+    diceStage.style.setProperty('--bx', cx + 'px'); diceStage.style.setProperty('--by', cy + 'px');
+    diceStage.classList.add('centered');
+    const m2 = mover.animate([{transform: `translate(${xf - half}px, ${yf - half}px) scale(1)`}, {transform: `translate(${cx - half}px, ${cy - half}px) scale(1.5)`}],
+      {duration: 450, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'forwards'});
+    diceAnims.push(m2, shadow.animate([{opacity: 0.85}, {opacity: 0}], {duration: 300, fill: 'forwards'}));
+    m2.onfinish = showResult;
+  };
+  a.onfinish = () => {
+    if (settled) return; settled = true; buzz();
+    diceSkip = () => { diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); toCenter(); diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); };
+    diceTimer = setTimeout(toCenter, 550);
+  };
 }
+let diceSkip = null;
 
 // ---------- render ----------
 function hintFor(g){
@@ -1464,30 +1553,7 @@ $('setbtn2').onclick = () => $('setbtn').click();
 $('compactbtn2').onclick = () => $('compactbtn').click();
 $('capsheet-x').onclick = () => { $('capsheet').hidden = true; };
 $('capsheet').addEventListener('click', e => { if (e.target === $('capsheet')) $('capsheet').hidden = true; });
-let swipeInfo = null, suppressDieClick = false;
-$('die').onclick = () => { if (suppressDieClick) return; roll(); };
-$('die').addEventListener('pointerdown', e => {
-  if (!$('swipe').checked) return;
-  swipeInfo = {id: e.pointerId, x0: e.clientX, y0: e.clientY, pts: [{x: e.clientX, y: e.clientY, t: performance.now()}]};
-  try { $('die').setPointerCapture(e.pointerId); } catch(x){}
-});
-$('die').addEventListener('pointermove', e => {
-  if (!swipeInfo || e.pointerId !== swipeInfo.id) return;
-  swipeInfo.pts.push({x: e.clientX, y: e.clientY, t: performance.now()}); if (swipeInfo.pts.length > 16) swipeInfo.pts.shift();
-});
-$('die').addEventListener('pointerup', e => {
-  if (!swipeInfo || e.pointerId !== swipeInfo.id) return;
-  const sw = swipeInfo; swipeInfo = null;
-  const now = performance.now(), end = {x: e.clientX, y: e.clientY, t: now};
-  if (Math.hypot(end.x - sw.x0, end.y - sw.y0) < 24) return;            // タップ扱い（click で振る）
-  const recent = sw.pts.filter(q => now - q.t < 120), a = recent[0] || sw.pts[0];
-  const dtm = Math.max(16, end.t - a.t), vx = (end.x - a.x) / dtm, vy = (end.y - a.y) / dtm;
-  suppressDieClick = true; setTimeout(() => { suppressDieClick = false; }, 400);
-  pendingThrow = {x: end.x, y: end.y, vx, vy, at: Date.now()};
-  roll();
-  if (mode === 'online' && seat === 'watch') pendingThrow = null;
-});
-$('die').addEventListener('pointercancel', () => { swipeInfo = null; });
+$('die').onclick = () => { if ($('swipe').checked) openDicePicker(); else roll(); };
 $('decide').onclick = decideFirst;
 $('reset').onclick = e => resetMatch(e.currentTarget);
 $('reset2').onclick = e => resetMatch(e.currentTarget);
