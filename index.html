@@ -482,6 +482,20 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .dstage.landed .dres-flip{transform:translate(-50%,0) rotate(180deg)}
 .dhint{position:absolute;left:0;right:0;bottom:calc(24px + env(safe-area-inset-bottom,0px));text-align:center;color:var(--muted);font-size:12px;letter-spacing:.1em;opacity:0;transition:opacity .3s .3s}
 .dstage.landed .dhint{opacity:1}
+
+/* 簡潔表示：名前は対戦中に編集しない */
+.compact .pname{pointer-events:none;border-bottom-color:transparent}
+/* 対面：中央ボタンの文字を奥の人にも */
+.lf{display:none}
+.m-off.flip.view-equal.compact #endturn,.m-off.flip.view-equal.compact #undo,.m-off.flip.view-equal.compact #reset2{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;padding-block:3px}
+.m-off.flip.view-equal.compact #ctrl .btn .lf{display:block;transform:rotate(180deg);font-size:.8em;opacity:.75}
+.m-off.flip.view-equal.compact #ctrl .btn .ln{font-size:.9em}
+/* タブレット縦：魔力・ノイズの丸もVOLと同じ大きさまで */
+@media (min-width:600px) and (max-width:999px){
+  .compact .crow:not([data-tk="vol"]) .cpips{height:100%;container-type:size}
+  .compact .crow:not([data-tk="vol"]) .cp{flex:0 0 auto;width:min(calc((100cqw - 16px) / 5), 100cqh, 46px);height:auto;max-width:none;max-height:none;aspect-ratio:1}
+  .compact .crow[data-tk="noise"] .cp{width:min(calc((100cqw - 16px) / 5), 75cqh, 34px);aspect-ratio:3/4}
+}
 </style>
 </head>
 <body>
@@ -740,7 +754,8 @@ function patch(k, o){
   } else if (mode === 'online' && role === 'host'){ broadcast(null, 0); }
   persist(); render();
 }
-function addLog(msg){
+function addLog(msg, target){
+  if (target && mode === 'online' && (seat === 'p1' || seat === 'p2') && target !== seat) msg += `（操作：${pn(seat)}）`;
   const t = new Date(); const ts = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
   const e = {ts, m: msg};
   if (mode === 'online' && role === 'guest'){
@@ -752,6 +767,10 @@ function addLog(msg){
   S.game.log = [e, ...(S.game.log || [])].slice(0, 40);
   if (mode === 'online' && role === 'host') broadcast(null, 0);
   persist(); render();
+}
+function setBtnLabel(btn, text){
+  if (btn.dataset.cur === text) return; btn.dataset.cur = text;
+  btn.innerHTML = `<span class="ln">${text}</span><span class="lf" aria-hidden="true">${text}</span>`;
 }
 function closeSettings(){ $('settings').hidden = true; $('setbtn').setAttribute('aria-expanded', 'false'); }
 const TURN_KEYS = ['active','turn','phase','artist'];
@@ -784,13 +803,15 @@ function startHost(code, resumeState){
   peer.on('open', () => { netState = 'hosting'; retries = 0; persist(); render(); });
   peer.on('connection', c => {
     c.on('open', () => {
-      const first = conns.size === 0; conns.add(c); try { c.send({t:'s', s:S}); } catch(e){}
+      const first = conns.size === 0; c.lastSeen = Date.now(); conns.add(c); try { c.send({t:'s', s:S}); } catch(e){}
       if (first){ closeSettings(); toast('相手が接続しました'); }
       render();
     });
     c.on('data', m => {
       if (!m || typeof m !== 'object') return;
       const seated = c.seat === 'p1' || c.seat === 'p2';
+      c.lastSeen = Date.now();
+      if (m.t === 'ping'){ try { c.send({t:'pong'}); } catch(e){} return; }
       if (m.t === 'r'){ if (seated) doReset(); return; }
       if (m.t === 'h'){
         const want = (m.seat === 'p1' || m.seat === 'p2') ? m.seat : 'watch';
@@ -854,13 +875,16 @@ function startGuest(code, asWatch){
 function dial(){
   if (!peer || peer.destroyed || !roomCode) return;
   const c = peer.connect(PFX + roomCode, {reliable:true});
-  conn = c;
+  const old = conn; conn = c;
+  if (old && old !== c){ try { old.close(); } catch(e){} }
   c.on('open', () => {
-    netState = 'connected'; retries = 0; sendHello();
+    netState = 'connected'; retries = 0; lastSeen = Date.now(); sendHello();
     if (!joinedOnce){ joinedOnce = true; closeSettings(); toast(`対戦 ${roomCode} に参加しました`); }
     render();
   });
   c.on('data', m => {
+    if (conn === c) lastSeen = Date.now();
+    if (m && m.t === 'pong') return;
     if (m && m.t === 'seat'){
       if (m.seat !== seat){
         seat = m.seat;
@@ -889,9 +913,45 @@ function sendHello(){ if (role === 'guest' && conn && conn.open){ try { conn.sen
 function scheduleRetry(){
   clearTimeout(retryT);
   if (role !== 'guest') return;
-  if (retries++ > 40){ netState = 'lost'; render(); return; }
-  retryT = setTimeout(() => { if (peer && peer.disconnected && !peer.destroyed){ try { peer.reconnect(); } catch(e){} } dial(); }, Math.min(8000, 1500 + retries * 500));
+  retries++;
+  const wait = retries > 30 ? 10000 : Math.min(8000, 1500 + retries * 500);
+  retryT = setTimeout(() => {
+    if (!peer || peer.destroyed){ startGuest(roomCode, seat === 'watch'); return; }
+    if (peer.disconnected){ try { peer.reconnect(); } catch(e){} return; }   // 再接続できたら peer の open で dial される
+    dial();
+  }, wait);
 }
+let lastSeen = 0;
+// 画面に戻った・回線が戻ったら、待たずにすぐつなぎ直す
+function reconnectNow(){
+  if (mode !== 'online' || !roomCode) return;
+  if (role === 'guest'){
+    if (conn && conn.open && Date.now() - lastSeen < 8000) return;
+    clearTimeout(retryT); retries = 0;
+    if (!peer || peer.destroyed){ startGuest(roomCode, seat === 'watch'); return; }
+    netState = 'lost'; render();
+    if (peer.disconnected){ try { peer.reconnect(); } catch(e){} } else dial();
+  } else if (role === 'host'){
+    if (!peer || peer.destroyed){ startHost(roomCode, S); return; }
+    if (peer.disconnected){ try { peer.reconnect(); } catch(e){} }
+  }
+}
+// 生存確認：参加者は4秒ごとに ping、12秒応答がなければつなぎ直す。ホストは25秒無音の接続を片付ける
+setInterval(() => {
+  if (mode !== 'online') return;
+  if (role === 'guest' && conn && conn.open){
+    try { conn.send({t:'ping'}); } catch(e){}
+    if (netState === 'connected' && Date.now() - lastSeen > 12000){ try { conn.close(); } catch(e){} conn = null; reconnectNow(); }
+  }
+  if (role === 'host'){
+    let changed = false;
+    for (const c of [...conns]) if (c.lastSeen && Date.now() - c.lastSeen > 25000){ conns.delete(c); try { c.close(); } catch(e){} changed = true; }
+    if (changed) render();
+  }
+}, 4000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reconnectNow(); });
+window.addEventListener('online', reconnectNow);
+window.addEventListener('pageshow', e => { if (e.persisted) reconnectNow(); });
 
 // ---------- game actions ----------
 const pn = p => S[p].name || (p === 'p1' ? 'プレイヤー1' : 'プレイヤー2');
@@ -900,7 +960,7 @@ function adjust(p, k, d){
   if (d > 0 && k === 'vol' && s.noise > 0){
     const use = Math.min(d, s.noise), gain = d - use;
     patch(p, {noise: s.noise - use, vol: Math.min(10, v + gain)});
-    addLog(`${pn(p)}：VOL獲得 → ノイズ${use}枚を手札へ（残り${s.noise}）`);
+    addLog(`${pn(p)}：VOL獲得 → ノイズ${use}枚を手札へ（残り${s.noise}）`, p);
     return;
   }
   const cap = capOf(p, k);
@@ -909,13 +969,13 @@ function adjust(p, k, d){
   const nv = Math.max(0, Math.min(cap, v + d));
   patch(p, {[k]: nv});
   const verb = k === 'vol' ? (d > 0 ? '獲得' : '減少') : k === 'noise' ? (d > 0 ? '配置' : '除去') : (d > 0 ? '生成' : '消費');
-  addLog(`${pn(p)}：${NAME[k]} ${verb} ${d > 0 ? '+' : ''}${d} → ${nv}`);
+  addLog(`${pn(p)}：${NAME[k]} ${verb} ${d > 0 ? '+' : ''}${d} → ${nv}`, p);
 }
 function setVal(p, k, v){
   const cur = S[p][k] || 0; const nv = Math.max(0, v);
   if (nv > capOf(p, k)){ toast(`${NAME[k]}の上限は${capOf(p, k)}です`); buzz(); return; }
   if (nv === cur) return;
-  patch(p, {[k]: nv}); addLog(`${pn(p)}：${NAME[k]} を ${nv} に`);
+  patch(p, {[k]: nv}); addLog(`${pn(p)}：${NAME[k]} を ${nv} に`, p);
 }
 function setCap(p, k, d){
   const mk = MOD[k], cur = S[p][mk] || 0, nm = Math.max(-5, Math.min(5, cur + d));
@@ -923,15 +983,15 @@ function setCap(p, k, d){
   const ncap = Math.max(0, 5 + nm), o = {[mk]: nm}; let lost = 0;
   if ((S[p][k] || 0) > ncap){ lost = S[p][k] - ncap; o[k] = ncap; }
   patch(p, o);
-  addLog(`${pn(p)}：${NAME[k]}の上限 ${Math.max(0,5+cur)} → ${ncap}` + (lost ? `（${lost}${k === 'noise' ? '枚' : '個'}消失）` : ''));
+  addLog(`${pn(p)}：${NAME[k]}の上限 ${Math.max(0,5+cur)} → ${ncap}` + (lost ? `（${lost}${k === 'noise' ? '枚' : '個'}消失）` : ''), p);
 }
 let armedLim = null, armedLimT = null;
 const capMode = new Set();
 const winHidden = new Set();
 function toggleLimited(p){
-  if (!S[p].lu){ patch(p, {lu:true}); addLog(`${pn(p)}：LIMITEDを使用`); return; }
+  if (!S[p].lu){ patch(p, {lu:true}); addLog(`${pn(p)}：LIMITEDを使用`, p); return; }
   if (armedLim !== p){ armedLim = p; clearTimeout(armedLimT); armedLimT = setTimeout(() => { armedLim = null; render(); }, 3000); render(); return; }
-  armedLim = null; patch(p, {lu:false}); addLog(`${pn(p)}：LIMITEDを使用前に戻した`);
+  armedLim = null; patch(p, {lu:false}); addLog(`${pn(p)}：LIMITEDを使用前に戻した`, p);
 }
 function setPhase(ph){ if (S.game.phase === ph) return; if (!myTurn()){ toast('相手の手番です'); return; } patch('game', {phase: ph}); addLog(`${pn(S.game.active)}：${PH[ph]}フェーズ`); }
 function endTurn(){
@@ -965,10 +1025,10 @@ function chooseFirst(p){
 function resetMatch(btn){
   if (mode === 'online' && seat === 'watch'){ toast('観戦中は操作できません'); return; }
   if (!btn.classList.contains('armed')){
-    btn.classList.add('armed'); btn.textContent = btn.dataset.armed;
-    btn._t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = btn.dataset.label; }, 3000); return;
+    btn.classList.add('armed'); setBtnLabel(btn, btn.dataset.armed);
+    btn._t = setTimeout(() => { btn.classList.remove('armed'); setBtnLabel(btn, btn.dataset.label); }, 3000); return;
   }
-  clearTimeout(btn._t); btn.classList.remove('armed'); btn.textContent = btn.dataset.label;
+  clearTimeout(btn._t); btn.classList.remove('armed'); setBtnLabel(btn, btn.dataset.label);
   if (mode === 'online' && role === 'guest'){
     if (conn && conn.open){ try { conn.send({t:'r'}); } catch(e){} } else toast('接続されていません');
     return;
@@ -1062,12 +1122,13 @@ function updatePanel(el, p){
   const s = S[p], g = S.game, q = f => el.querySelector(`[data-f="${f}"]`);
   const nameEl = q('name'); if (document.activeElement !== nameEl) nameEl.value = s.name || '';
   const ro = !canEdit(p);
-  nameEl.readOnly = ro; el.classList.toggle('readonly', ro);
+  nameEl.readOnly = ro || compact; el.classList.toggle('readonly', ro);
   q('ro').hidden = !ro;
   q('role').textContent = roleLabel(p);
   q('me').hidden = !(mode === 'online' && seat === p);
   const isTurn = !!(g.first && g.active === p);
   q('turnchip').hidden = !isTurn; el.classList.toggle('turn', isTurn);
+  q('turnchip').textContent = `手番・${Math.ceil((g.turn || 1) / 2)}ターン目`;
   const capTxt = k => (s[MOD[k]] || 0) ? `<small>/${capOf(p,k)}</small>` : '';
   q('voln').textContent = s.vol; q('noisen').innerHTML = s.noise + capTxt('noise');
   el.querySelectorAll('.vp').forEach((b,i) => b.classList.toggle('on', i < s.vol));
@@ -1208,6 +1269,7 @@ function render(){
   app.classList.toggle('view-equal', viewMode === 'equal');
   app.classList.toggle('flip', $('flip').checked);
   app.classList.toggle('compact', compact);
+  app.classList.toggle('m-off', mode === 'offline');
   document.body.classList.toggle('compact-body', compact);
   $('compactbtn').setAttribute('aria-pressed', String(compact));
   document.querySelectorAll('.sec').forEach(s => {
@@ -1236,7 +1298,7 @@ function render(){
   $('endturn').disabled = !g.first || oppTurn;
   $('undo').hidden = mode === 'online'; $('undo').disabled = !hist.length;
   $('compactbtn2').setAttribute('aria-pressed', String(compact));
-  $('endturn').textContent = oppTurn ? '相手の手番' : 'ターン終了';
+  setBtnLabel($('endturn'), oppTurn ? '相手の手番' : 'ターン終了');
 
   const d = g.dice, die = $('die');
   if (d && d.n !== lastDie){ if (Math.abs(Date.now() - d.n) < 8000) playDice(d); lastDie = d.n; }
@@ -1342,7 +1404,7 @@ document.addEventListener('click', e => {
   if (b.dataset.winundo){ const p = b.closest('.player').dataset.p; if (canEdit(p)) adjust(p, 'vol', -1); return; }
   if (b.dataset.phase) return setPhase(b.dataset.phase);
   if (b.dataset.first) return chooseFirst(b.dataset.first);
-  if (b.dataset.mull){ if (!canEdit(b.dataset.mull)){ toast('相手の値は操作できません'); return; } const p = b.dataset.mull, v = Math.max(0, (S[p].mull||0) + (+b.dataset.d)); patch(p, {mull:v}); addLog(`${pn(p)}：引き直し ${v}回`); return; }
+  if (b.dataset.mull){ if (!canEdit(b.dataset.mull)){ toast('相手の値は操作できません'); return; } const p = b.dataset.mull, v = Math.max(0, (S[p].mull||0) + (+b.dataset.d)); patch(p, {mull:v}); addLog(`${pn(p)}：引き直し ${v}回`, p); return; }
   if (b.dataset.seat){
     if (role === 'host' && b.dataset.seat !== 'watch' && [...conns].some(x => x.seat === b.dataset.seat)){ toast('その席は相手が使っています'); return; }
     seat = b.dataset.seat; store.set(role === 'host' ? 'kt-seat-host' : 'kt-seat-guest', seat);
@@ -1428,6 +1490,7 @@ document.addEventListener('pointerdown', () => { if (wantWake()) setWake(true, t
 if (wantWake()) setWake(true, true);
 
 // ---------- boot ----------
+setBtnLabel($('undo'), '↶ 戻す'); setBtnLabel($('reset2'), 'リセット'); setBtnLabel($('reset'), '対戦をリセット');
 buildPanel($('panel-top')); buildPanel($('panel-bottom'));
 $('flip').checked = store.get('kt-flip') !== '0';
 $('follow').checked = store.get('kt-follow') !== '0';
