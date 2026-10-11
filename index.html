@@ -483,7 +483,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
       </div>
       <div id="offopts" class="optlist">
         <label class="check"><input type="checkbox" id="flip" checked> <span>対面表示（相手側を180°回転）<small class="note" id="flipnote" hidden>「2人並べる」のときに使えます</small></span></label>
-        <label class="check"><input type="checkbox" id="follow" checked> 手番のプレイヤーを自動で大きく</label>
+        <label class="check"><input type="checkbox" id="follow" checked> <span>手番のプレイヤーを自動で大きく<small class="note" id="follownote" hidden>「自分を大きく」のときに使えます</small></span></label>
       </div>
       <div class="optlist">
         <label class="check" id="wakewrap"><input type="checkbox" id="wake"> 画面を消さない</label>
@@ -657,6 +657,7 @@ function addLog(msg){
 }
 function closeSettings(){ $('settings').hidden = true; $('setbtn').setAttribute('aria-expanded', 'false'); }
 const TURN_KEYS = ['active','turn','phase','artist'];
+const followOn = () => mode === 'offline' && $('follow').checked && viewMode === 'focus';
 const myTurn = () => mode !== 'online' || seat === S.game.active;
 const CID = (() => { let v = store.get('kt-cid'); if (!v){ v = Math.random().toString(36).slice(2, 12); store.set('kt-cid', v); } return v; })();
 let joinedOnce = false;
@@ -841,7 +842,7 @@ function endTurn(){
   const g = S.game, nx = other(g.active);
   patch('game', {active: nx, turn: (g.turn || 1) + 1, phase: 'draw', artist: false});
   addLog(`${pn(g.active)} ターン終了 → ${pn(nx)} の番`);
-  if (mode === 'offline' && $('follow').checked) bigP = nx;
+  if (followOn()) bigP = nx;
   render();
 }
 function roll(){
@@ -858,7 +859,7 @@ function decideFirst(){
 function chooseFirst(p){
   patch('game', {first:p, active:p, turn:1, phase:'draw', artist:false, fp:null});
   addLog(`先攻：${pn(p)}　後攻：${pn(other(p))}`);
-  if (mode === 'offline' && $('follow').checked) bigP = p;
+  if (followOn()) bigP = p;
   render();
 }
 function resetMatch(btn){
@@ -1044,6 +1045,7 @@ function render(){
   $('m-on').setAttribute('aria-checked', String(mode === 'online'));
   $('offopts').hidden = mode === 'online';
   $('flip').disabled = viewMode !== 'equal'; $('flipnote').hidden = viewMode === 'equal';
+  $('follow').disabled = viewMode !== 'focus'; $('follownote').hidden = viewMode === 'focus';
   $('online').hidden = mode !== 'online';
 
   const bottom = bigP, top = other(bottom);
@@ -1187,8 +1189,8 @@ $('reset2').onclick = e => resetMatch(e.currentTarget);
 $('artist').onchange = e => { if (!myTurn()){ e.target.checked = !!S.game.artist; toast('相手の手番です'); return; } patch('game', {artist:e.target.checked}); if (e.target.checked) addLog(`${pn(S.game.active)}：Artistを登場させた`); };
 $('setbtn').onclick = () => { const s = $('settings'); s.hidden = !s.hidden; $('setbtn').setAttribute('aria-expanded', String(!s.hidden)); };
 $('compactbtn').onclick = () => { compact = !compact; store.set('kt-compact', compact ? '1' : ''); render(); };
-$('v-focus').onclick = () => { viewMode = 'focus'; store.set(viewKey(), viewMode); render(); };
-$('v-equal').onclick = () => { viewMode = 'equal'; store.set(viewKey(), viewMode); render(); };
+$('v-focus').onclick = () => { viewMode = 'focus'; store.set(viewKey(), viewMode); if (followOn() && S.game.first) bigP = S.game.active; render(); };
+$('v-equal').onclick = () => { viewMode = 'equal'; store.set(viewKey(), viewMode); if (mode === 'offline') bigP = 'p1'; render(); };
 $('flip').onchange = e => { store.set('kt-flip', e.target.checked ? '1' : '0'); render(); };
 $('oe').onchange = e => {
   if (role !== 'host'){ e.target.checked = !!S.game.oe; return; }
@@ -1200,8 +1202,7 @@ $('netpill').onclick = () => $('setbtn').click();
 $('follow').onchange = e => store.set('kt-follow', e.target.checked ? '1' : '0');
 $('m-off').onclick = () => {
   if (mode === 'offline') return;
-  teardown(); mode = 'offline'; seat = 'p1'; S = loadJSON('kt-offline') || defaults(); bigP = S.game.first && $('follow').checked ? S.game.active : 'p1';
-  store.set('kt-mode', 'offline'); loadView(); render();
+  teardown(); mode = 'offline'; seat = 'p1'; S = loadJSON('kt-offline') || defaults(); store.set('kt-mode', 'offline'); loadView(); bigP = followOn() && S.game.first ? S.game.active : 'p1'; render();
 };
 $('m-on').onclick = () => { if (mode === 'online') return; persist(); mode = 'online'; store.set('kt-mode', 'online'); S = defaults(); loadView(); render(); };
 $('host').onclick = () => startHost(newCode(), null);
@@ -1240,7 +1241,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 buildPanel($('panel-top')); buildPanel($('panel-bottom'));
 $('flip').checked = store.get('kt-flip') !== '0';
 $('follow').checked = store.get('kt-follow') !== '0';
-bigP = S.game.first && $('follow').checked ? S.game.active : 'p1';
+bigP = 'p1';
 const qs = new URLSearchParams(location.search);
 const qroom = (qs.get('room') || '').toUpperCase();
 if (/^[A-Z0-9]{4}$/.test(qroom)){
@@ -1251,6 +1252,7 @@ if (/^[A-Z0-9]{4}$/.test(qroom)){
 } else {
   if (store.get('kt-mode') === 'online'){ mode = 'online'; S = defaults(); }
   loadView();
+  if (followOn() && S.game.first) bigP = S.game.active;
   if (!store.get('kt-seen')){ $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
   render();
   let last = null; try { last = JSON.parse(store.get('kt-last')); } catch(e){}
