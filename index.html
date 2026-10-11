@@ -683,7 +683,7 @@ const store = {
 };
 function defaults(){
   return {
-    game:{turn:1, active:'p1', phase:'draw', artist:false, first:null, log:[], dice:null, fp:null, oe:false},
+    game:{turn:1, active:'p1', phase:'draw', artist:false, first:null, log:[], dice:null, fp:null, oe:false, dcl:0},
     p1:{name:'プレイヤー1', vol:0, noise:0, a:0, b:0, o:0, mull:0, ma:0, mb:0, mo:0, mn:0, lu:false},
     p2:{name:'プレイヤー2', vol:0, noise:0, a:0, b:0, o:0, mull:0, ma:0, mb:0, mo:0, mn:0, lu:false},
   };
@@ -691,7 +691,7 @@ function defaults(){
 function loadJSON(k){ try { const s = JSON.parse(store.get(k)); if (s && s.game && s.p1 && s.p2) return s; } catch(e){} return null; }
 
 // ---------- sanitize incoming data ----------
-const GAME_KEYS = ['turn','active','phase','artist','first','log','dice','fp','oe'];
+const GAME_KEYS = ['turn','active','phase','artist','first','log','dice','fp','oe','dcl'];
 const P_KEYS = ['name','vol','noise','a','b','o','mull','ma','mb','mo','mn','lu'];
 const MOD = {a:'ma', b:'mb', o:'mo', noise:'mn'};
 const MOD_KEYS = ['ma','mb','mo','mn'];
@@ -712,6 +712,7 @@ function clean(k, o){
       else if (key === 'phase' && PH[v]) out.phase = v;
       else if (key === 'artist') out.artist = !!v;
       else if (key === 'oe') out.oe = !!v;
+      else if (key === 'dcl') out.dcl = Number(v) || 0;
       else if (key === 'log' && Array.isArray(v)) out.log = v.slice(0,40).map(e => ({ts:String(e && e.ts || '').slice(0,5), m:String(e && e.m || '').slice(0,120)}));
       else if (key === 'dice' && (v === null || (v && Number.isInteger(v.v) && v.v >= 1 && v.v <= 6))) out.dice = v ? {v:v.v, by:String(v.by||'').slice(0,20), n:Number(v.n)||0, s:(v.s === 'p1' || v.s === 'p2') ? v.s : null, r:(Number.isInteger(v.r) && v.r >= 0) ? v.r % 2147483647 : 0, t:cleanThrow(v.t)} : null;
       else if (key === 'fp' && (v === null || (v && (v.w === 'p1' || v.w === 'p2')))) out.fp = v ? {p1:+v.p1||0, p2:+v.p2||0, w:v.w} : null;
@@ -1240,7 +1241,7 @@ function buildDiceStage(){
   document.body.appendChild(diceStage);
   diceStage.addEventListener('click', e => {
     if (diceStage.classList.contains('picking')){ if (!e.target.closest('.dmover')) closeDice(); return; }
-    if (diceStage.classList.contains('landed')) return closeDice();
+    if (diceStage.classList.contains('landed')) return closeDiceByUser();
     if (diceSkip){ const f = diceSkip; diceSkip = null; f(); return; }
     if (e.target.closest('.dmover')) return;          // 投げた直後のタップは無視
     diceAnims.forEach(a => { try { a.finish(); } catch(x){} });
@@ -1278,6 +1279,12 @@ function buildDiceStage(){
   mover.addEventListener('pointerup', release);
   mover.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag.id){ drag = null; diceStage.classList.remove('grabbing'); } });
 }
+// 結果を閉じたとき、オンラインでは相手の画面の結果も閉じる（閉じたサイコロの番号を共有）
+function closeDiceByUser(){
+  const n = shownDie; closeDice();
+  if (mode === 'online' && (seat === 'p1' || seat === 'p2') && n && S.game.dice && S.game.dice.n === n && S.game.dcl !== n) patch('game', {dcl: n});
+}
+let shownDie = 0;
 function closeDice(){
   if (!diceStage || diceStage.hidden) return;
   clearTimeout(diceTimer); diceAnims.forEach(a => { try { a.cancel(); } catch(e){} }); diceAnims = [];
@@ -1332,7 +1339,7 @@ function playDice(d){
   const judge = `<b>${v}</b><span class="${v >= 4 ? 'y' : ''}">${v >= 4 ? '✓' : '×'} 4以上</span><span class="${v % 2 === 0 ? 'y' : ''}">${v % 2 === 0 ? '✓' : '×'} 偶数</span>`;
   diceStage.querySelector('.dres-main').innerHTML = judge + (d.by ? `<small>${esc(d.by)}</small>` : '');
   const fl = diceStage.querySelector('.dres-flip'); fl.innerHTML = judge; fl.hidden = !flipRead;
-  diceStage.hidden = false; void diceStage.offsetWidth; diceStage.classList.add('on');
+  diceStage.hidden = false; void diceStage.offsetWidth; diceStage.classList.add('on'); shownDie = d.n;
 
   const mover = diceStage.querySelector('.dmover'), cube = diceStage.querySelector('.dcube'), shadow = diceStage.querySelector('.dshadow');
   // 同じ種から同じ乱数列を作る（オンラインで両方の端末の動きをそろえる）
@@ -1473,13 +1480,15 @@ function render(){
 
   const d = g.dice, die = $('die');
   if (d && d.n !== lastDie){
-    if (Math.abs(Date.now() - d.n) < 8000){
+    if (Math.abs(Date.now() - d.n) < 8000 && g.dcl !== d.n){
       // 自分がサイコロをはじこうとしている最中に相手が振ったら、画面はそのままにして結果だけ知らせる
       if (diceStage && diceStage.classList.contains('picking') && !pendingThrow) toast(`${d.by} がサイコロを振りました：${d.v}`);
       else playDice(d);
     }
     lastDie = d.n;
   }
+  // 相手が結果を閉じたら、こちらの表示も閉じる
+  if (d && g.dcl === d.n && diceStage && !diceStage.hidden && !diceStage.classList.contains('picking') && shownDie === d.n) closeDice();
   if (!shuffleTimer) die.innerHTML = d ? pipSVG(d.v) : '–';
   const js = $('judge').children;
   js[0].className = d && d.v >= 4 ? 'y' : ''; js[0].textContent = (d && d.v >= 4 ? '✓ ' : '・') + '4以上';
