@@ -487,9 +487,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact .pname{pointer-events:none;border-bottom-color:transparent}
 /* 対面：中央ボタンの文字を奥の人にも */
 .lf{display:none}
-.m-off.flip.view-equal.compact #endturn,.m-off.flip.view-equal.compact #undo,.m-off.flip.view-equal.compact #reset2{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;padding-block:3px}
-.m-off.flip.view-equal.compact #ctrl .btn .lf{display:block;transform:rotate(180deg);font-size:.8em;opacity:.75}
-.m-off.flip.view-equal.compact #ctrl .btn .ln{font-size:.9em}
+.ctrl-flip #endturn .ln,.ctrl-flip #undo .ln,.ctrl-flip #reset2 .ln{display:inline-block;transform:rotate(180deg)}
 /* タブレット縦：魔力・ノイズの丸もVOLと同じ大きさまで */
 @media (min-width:600px) and (max-width:999px){
   .compact .crow:not([data-tk="vol"]) .cpips{height:100%;container-type:size}
@@ -1002,7 +1000,6 @@ function endTurn(){
   addLog(`${pn(g.active)} ターン終了 → ${pn(nx)} の番`);
   if (followOn()) bigP = nx;
   render();
-  if (mode === 'offline') toastAction(`${pn(nx)} の番になりました`, '元に戻す', undo);
 }
 function roll(){
   if (mode === 'online' && seat === 'watch'){ toast('観戦中は操作できません'); return; }
@@ -1270,6 +1267,7 @@ function render(){
   app.classList.toggle('flip', $('flip').checked);
   app.classList.toggle('compact', compact);
   app.classList.toggle('m-off', mode === 'offline');
+  app.classList.toggle('ctrl-flip', mode === 'offline' && viewMode === 'equal' && $('flip').checked && !!S.game.first && S.game.active === other(bigP));
   document.body.classList.toggle('compact-body', compact);
   $('compactbtn').setAttribute('aria-pressed', String(compact));
   document.querySelectorAll('.sec').forEach(s => {
