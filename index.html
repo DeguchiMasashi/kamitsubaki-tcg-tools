@@ -218,7 +218,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .player.readonly .capstep{display:inline-flex}
 .tk.sealed,.np.sealed{opacity:.5;border-style:dashed;pointer-events:none;background:repeating-linear-gradient(135deg,transparent 0 4px,rgba(255,255,255,.12) 4px 5px)}
 .mcount small,.mini .st small,.sec-head .sum small{font-size:.55em;color:var(--dim)}
-.mrow{grid-template-columns:1.6em minmax(0,1fr) auto auto}
+.mrow{grid-template-columns:30px minmax(0,1fr) auto auto}
 .caps{display:grid;gap:6px;margin-top:6px}
 .caprow{display:grid;grid-template-columns:1.6em minmax(0,1fr) auto;align-items:center;gap:8px}
 .caprow .mname .ic{width:24px;height:24px}
@@ -318,7 +318,6 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 @media (max-width:380px){.step button{width:40px;height:42px}.tk{width:22px;height:22px}.mrow{gap:6px}}
 /* PC（横並び）での簡潔表示 */
 @media (min-width:1000px){
-  .flip.view-equal #panel-top{transform:none}
   .compact .board{align-content:center}
   .view-equal.compact .board{grid-template-rows:auto auto}
   .view-focus.compact .board{grid-template-rows:auto auto auto}
@@ -404,6 +403,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .sheet .caprow{grid-template-columns:28px minmax(0,1fr) auto}
 .mini .capbtn{background:transparent;color:var(--warn);border-color:rgba(242,166,90,.5);cursor:pointer;flex:0 0 auto}
 .win .row .btn{min-height:40px}
+@media (max-height:540px){.win{padding:6px}.win h2{font-size:22px}.win p{margin:2px 0 6px;font-size:12px}.win .row{gap:8px}.win .row .btn{min-height:34px;padding:4px 12px}}
 .oecheck small{display:block;margin-top:2px}
 .oecheck{align-items:flex-start}
 .oecheck input{margin-top:3px}
@@ -760,7 +760,7 @@ function undo(){
   if (mode !== 'offline') return;
   if (!hist.length){ toast('戻せる操作がありません'); return; }
   const last = (S.game.log || [])[0];
-  S = JSON.parse(hist.pop());
+  S = JSON.parse(hist.pop()); lastDie = S.game.dice ? S.game.dice.n : null;
   const t = new Date(), ts = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
   S.game.log = [{ts, m: '↶ 取り消し：' + (last ? last.m : '直前の操作')}, ...(S.game.log || [])].slice(0, 40);
   capMode.clear();
@@ -797,6 +797,9 @@ function setBtnLabel(btn, text){
 }
 function closeSettings(){ $('settings').hidden = true; $('setbtn').setAttribute('aria-expanded', 'false'); }
 const TURN_KEYS = ['active','turn','phase','artist'];
+// 対面表示が実際に効いているか（マウス操作のPCで横並びのときは回転しない）
+const pcWide = matchMedia('(min-width:1000px) and (pointer:fine)');
+const flipOn = () => $('flip').checked && !pcWide.matches;
 const followOn = () => mode === 'offline' && $('follow').checked && viewMode === 'focus';
 const myTurn = () => mode !== 'online' || seat === S.game.active;
 const CID = (() => { let v = store.get('kt-cid'); if (!v){ v = Math.random().toString(36).slice(2, 12); store.set('kt-cid', v); } return v; })();
@@ -819,6 +822,7 @@ function startHost(code, resumeState){
   teardown();
   role = 'host'; roomCode = code; netState = 'connecting';
   S = resumeState || defaults();
+  lastDie = S.game.dice ? S.game.dice.n : null;
   if (!resumeState) S.game.log = [{ts:new Date().toTimeString().slice(0,5), m:`対戦 ${code} を作成`}];
   seat = store.get('kt-seat-host') || 'p1'; bigP = seat === 'watch' ? 'p1' : seat;
   store.set('kt-mode', 'online');
@@ -901,7 +905,7 @@ function dial(){
   const old = conn; conn = c;
   if (old && old !== c){ try { old.close(); } catch(e){} }
   c.on('open', () => {
-    netState = 'connected'; retries = 0; lastSeen = Date.now(); sendHello();
+    netState = 'connected'; retries = 0; lastSeen = Date.now(); c._fresh = true; sendHello();
     if (!joinedOnce){ joinedOnce = true; closeSettings(); toast(`対戦 ${roomCode} に参加しました`); }
     render();
   });
@@ -921,6 +925,7 @@ function dial(){
     const s = defaults();
     for (const k of ['game','p1','p2']) Object.assign(s[k], clean(k, m.s[k]));
     if (m.q) unacked = unacked.filter(u => u.q > m.q);
+    if (c._fresh){ c._fresh = false; lastDie = s.game.dice ? s.game.dice.n : null; }   // つないだ直後は過去のサイコロを再生しない
     for (const u of unacked) Object.assign(s[u.k], u.o);
     S = s; render();
   });
@@ -996,6 +1001,7 @@ function adjust(p, k, d){
 }
 function setVal(p, k, v){
   const cur = S[p][k] || 0; const nv = Math.max(0, v);
+  if (k === 'vol' && nv > cur && (S[p].noise || 0) > 0) return adjust(p, 'vol', nv - cur);   // ノイズがあるときはノイズを手札へ
   if (nv > capOf(p, k)){ toast(`${NAME[k]}の上限は${capOf(p, k)}です`); buzz(); return; }
   if (nv === cur) return;
   patch(p, {[k]: nv}); addLog(`${pn(p)}：${NAME[k]} を ${nv} に`, p);
@@ -1322,7 +1328,7 @@ function playDice(d){
   // 転がしてきた方向：対面表示で奥の人が振ったら上から、それ以外は下から
   const topP = $('panel-top').dataset.p;
   const fromTop = !!d.s && d.s === topP && (viewMode === 'equal' || mode === 'online');
-  const flipRead = mode === 'offline' && viewMode === 'equal' && $('flip').checked;
+  const flipRead = mode === 'offline' && viewMode === 'equal' && flipOn();
   const judge = `<b>${v}</b><span class="${v >= 4 ? 'y' : ''}">${v >= 4 ? '✓' : '×'} 4以上</span><span class="${v % 2 === 0 ? 'y' : ''}">${v % 2 === 0 ? '✓' : '×'} 偶数</span>`;
   diceStage.querySelector('.dres-main').innerHTML = judge + (d.by ? `<small>${esc(d.by)}</small>` : '');
   const fl = diceStage.querySelector('.dres-flip'); fl.innerHTML = judge; fl.hidden = !flipRead;
@@ -1429,11 +1435,11 @@ function render(){
   const app = $('app');
   app.classList.toggle('view-focus', viewMode === 'focus');
   app.classList.toggle('view-equal', viewMode === 'equal');
-  app.classList.toggle('flip', $('flip').checked);
+  app.classList.toggle('flip', flipOn());
   app.classList.toggle('compact', compact);
   app.classList.toggle('m-off', mode === 'offline');
   app.classList.toggle('swipe-on', $('swipe').checked);
-  app.classList.toggle('ctrl-flip', mode === 'offline' && viewMode === 'equal' && $('flip').checked && !!S.game.first && S.game.active === other(bigP));
+  app.classList.toggle('ctrl-flip', mode === 'offline' && viewMode === 'equal' && flipOn() && !!S.game.first && S.game.active === other(bigP));
   document.body.classList.toggle('compact-body', compact);
   $('compactbtn').setAttribute('aria-pressed', String(compact));
   document.querySelectorAll('.sec').forEach(s => {
@@ -1445,7 +1451,8 @@ function render(){
   $('m-off').setAttribute('aria-checked', String(mode === 'offline'));
   $('m-on').setAttribute('aria-checked', String(mode === 'online'));
   $('offopts').hidden = mode === 'online';
-  $('flip').disabled = viewMode !== 'equal'; $('flipnote').hidden = viewMode === 'equal';
+  $('flip').disabled = viewMode !== 'equal' || pcWide.matches; $('flipnote').hidden = viewMode === 'equal' && !pcWide.matches;
+  $('flipnote').textContent = pcWide.matches ? 'マウスで操作する横長の画面では使いません' : '「2人並べる」のときに使えます';
   $('follow').disabled = viewMode !== 'focus'; $('follownote').hidden = viewMode === 'focus';
   $('online').hidden = mode !== 'online';
 
@@ -1465,7 +1472,14 @@ function render(){
   setBtnLabel($('endturn'), oppTurn ? '相手の手番' : 'ターン終了');
 
   const d = g.dice, die = $('die');
-  if (d && d.n !== lastDie){ if (Math.abs(Date.now() - d.n) < 8000) playDice(d); lastDie = d.n; }
+  if (d && d.n !== lastDie){
+    if (Math.abs(Date.now() - d.n) < 8000){
+      // 自分がサイコロをはじこうとしている最中に相手が振ったら、画面はそのままにして結果だけ知らせる
+      if (diceStage && diceStage.classList.contains('picking') && !pendingThrow) toast(`${d.by} がサイコロを振りました：${d.v}`);
+      else playDice(d);
+    }
+    lastDie = d.n;
+  }
   if (!shuffleTimer) die.innerHTML = d ? pipSVG(d.v) : '–';
   const js = $('judge').children;
   js[0].className = d && d.v >= 4 ? 'y' : ''; js[0].textContent = (d && d.v >= 4 ? '✓ ' : '・') + '4以上';
@@ -1541,7 +1555,7 @@ document.addEventListener('click', e => {
   const panel = b.closest('.player');
   if (panel && b.dataset.act){
     const p = panel.dataset.p;
-    if (!canEdit(p)){ toast('相手の値は操作できません'); return; }
+    if (!canEdit(p)){ toast(seat === 'watch' && mode === 'online' ? '観戦中は操作できません' : '相手の値は操作できません'); return; }
     if (b.dataset.act === 'adj') adjust(p, b.dataset.k, +b.dataset.d); else setVal(p, b.dataset.k, +b.dataset.v);
     return;
   }
@@ -1603,6 +1617,7 @@ $('setbtn').onclick = () => { const s = $('settings'); s.hidden = !s.hidden; $('
 $('compactbtn').onclick = () => { compact = !compact; store.set('kt-compact', compact ? '1' : ''); render(); };
 $('v-focus').onclick = () => { viewMode = 'focus'; store.set(viewKey(), viewMode); if (followOn() && S.game.first) bigP = S.game.active; render(); };
 $('v-equal').onclick = () => { viewMode = 'equal'; store.set(viewKey(), viewMode); if (mode === 'offline') bigP = 'p1'; render(); };
+pcWide.addEventListener && pcWide.addEventListener('change', () => render());
 $('flip').onchange = e => { store.set('kt-flip', e.target.checked ? '1' : '0'); render(); };
 $('oe').onchange = e => {
   if (role !== 'host'){ e.target.checked = !!S.game.oe; return; }
@@ -1614,7 +1629,7 @@ $('netpill').onclick = () => $('setbtn').click();
 $('follow').onchange = e => store.set('kt-follow', e.target.checked ? '1' : '0');
 $('m-off').onclick = () => {
   if (mode === 'offline') return;
-  teardown(); mode = 'offline'; seat = 'p1'; S = loadJSON('kt-offline') || defaults(); store.set('kt-mode', 'offline'); loadView(); bigP = followOn() && S.game.first ? S.game.active : 'p1'; render();
+  teardown(); mode = 'offline'; seat = 'p1'; S = loadJSON('kt-offline') || defaults(); store.set('kt-mode', 'offline'); lastDie = S.game.dice ? S.game.dice.n : null; loadView(); bigP = followOn() && S.game.first ? S.game.active : 'p1'; render();
 };
 $('m-on').onclick = () => { if (mode === 'online') return; persist(); hist.length = 0; mode = 'online'; store.set('kt-mode', 'online'); S = defaults(); loadView(); render(); };
 $('host').onclick = () => startHost(newCode(), null);
@@ -1687,6 +1702,7 @@ if (/^[A-Z0-9]{4}$/.test(qroom)){
 } else {
   if (store.get('kt-mode') === 'online'){ mode = 'online'; S = defaults(); }
   loadView();
+  lastDie = S.game.dice ? S.game.dice.n : null;   // 再読み込みで前のサイコロを再生しない
   if (followOn() && S.game.first) bigP = S.game.active;
   if (!store.get('kt-seen')){ $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
   render();
