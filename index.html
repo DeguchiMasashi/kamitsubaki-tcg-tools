@@ -480,6 +480,8 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .dres-flip{bottom:calc(50% + var(--ds) * .9);transform:translate(-50%,-8px) rotate(180deg)}
 .dstage.landed .dres{opacity:1;transform:translate(-50%,0)}
 .dstage.landed .dres-flip{transform:translate(-50%,0) rotate(180deg)}
+.dhint{position:absolute;left:0;right:0;bottom:calc(24px + env(safe-area-inset-bottom,0px));text-align:center;color:var(--muted);font-size:12px;letter-spacing:.1em;opacity:0;transition:opacity .3s .3s}
+.dstage.landed .dhint{opacity:1}
 </style>
 </head>
 <body>
@@ -1135,9 +1137,12 @@ function buildDiceStage(){
     <div class="dmover"><div class="dscene"><div class="dcube">
       ${[1,2,3,4,5,6].map(v => `<div class="dface f${v}">${pipSVG(v)}</div>`).join('')}
     </div></div></div>
-    <div class="dresult"><div class="dres dres-flip"></div><div class="dres dres-main"></div></div>`;
+    <div class="dresult"><div class="dres dres-flip"></div><div class="dres dres-main"></div><div class="dhint">タップで閉じる</div></div>`;
   document.body.appendChild(diceStage);
-  diceStage.addEventListener('click', closeDice);
+  diceStage.addEventListener('click', () => {
+    if (diceStage.classList.contains('landed')) return closeDice();
+    diceAnims.forEach(a => { try { a.finish(); } catch(e){} });
+  });
 }
 function closeDice(){
   if (!diceStage || diceStage.hidden) return;
@@ -1164,7 +1169,7 @@ function playDice(d){
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [fx, fy] = FACE_ROT[v], tilt = rnd(-14, 14);
   const finalT = `rotateZ(${tilt + 360 * 2}deg) rotateX(${fx + 360 * 3}deg) rotateY(${fy + 360 * 2}deg)`;
-  const land = () => { diceStage.classList.add('landed'); buzz(); diceTimer = setTimeout(closeDice, 1700); };
+  const land = () => { if (diceStage.classList.contains('landed')) return; diceStage.classList.add('landed'); buzz(); };
   if (reduce){
     mover.style.transform = `translate(${cx - half}px, ${cy - half}px)`; cube.style.transform = finalT;
     shadow.style.transform = `translate(${cx - half}px, ${cy + half * 0.75}px)`; land(); return;
