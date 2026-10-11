@@ -361,9 +361,10 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .cpips{gap:5px}
 }
 
-/* 簡潔表示の進行エリア：サイコロ・ターン終了・リセットのみ */
+/* 簡潔表示の進行エリア：サイコロ・ターン終了・戻す・リセット */
 .compact #turnline,.compact #ctrl .phases,.compact #artistwrap,.compact .judge{display:none!important}
-.compact #ctrl{grid-template-areas:"die end reset"!important;grid-template-columns:auto minmax(0,1fr) auto!important;align-items:stretch}
+.compact #ctrl{grid-template-areas:"die end undo reset"!important;grid-template-columns:auto minmax(0,1fr) auto auto!important;align-items:stretch}
+.compact #undo{grid-area:undo;min-height:44px;padding:6px 10px;font-size:13px;white-space:nowrap}
 .compact #reset2{display:block;grid-area:reset;min-height:44px;padding:6px 12px;font-size:13px;white-space:nowrap}
 .compact #endturn{grid-area:end;min-height:44px}
 .compact .die{grid-area:die;align-self:center}
@@ -406,6 +407,44 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .oecheck small{display:block;margin-top:2px}
 .oecheck{align-items:flex-start}
 .oecheck input{margin-top:3px}
+#setbtn2,#compactbtn2{display:none}
+#undo:disabled{opacity:.35}
+.tbtn{margin-left:8px;border:1px solid var(--gold);background:var(--gold);color:var(--ink);border-radius:8px;padding:4px 10px;font-weight:700;font-size:13px}
+/* スマホ横向き（簡潔表示）：上部バーを省き、各プレイヤーを2列に */
+@media (orientation:landscape) and (max-height:540px){
+  .wrap.compact{height:100vh;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:hidden;padding-block:6px;gap:6px}
+  .compact-body{overflow:hidden}
+  .compact .top{display:none}
+  .compact .settings{top:calc(env(safe-area-inset-top,0px) + 8px)}
+  .compact .board{gap:6px}
+  .compact .player{min-height:0;padding:6px 12px;gap:4px}
+  .compact .phead .pname{font-size:14px}
+  .compact #ctrl{grid-template-areas:"die end undo reset set cmp"!important;grid-template-columns:auto minmax(0,1fr) auto auto auto auto!important;padding:5px 8px;gap:6px}
+  .compact #ctrl .btn{min-height:36px;padding:4px 12px}
+  .compact #setbtn2,.compact #compactbtn2{display:block}
+  #setbtn2{grid-area:set} #compactbtn2{grid-area:cmp}
+  #compactbtn2[aria-pressed="true"]{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:700}
+  .compact .die{width:36px;height:36px;font-size:22px}
+  .compact .crows{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:repeat(3,minmax(0,1fr));grid-auto-flow:column;column-gap:18px;row-gap:4px}
+  .compact .crow[data-tk="vol"]{grid-row:span 2}
+  .compact .crow[data-tk="vol"] .cpips{display:grid;grid-template-columns:repeat(5,auto);grid-template-rows:repeat(2,auto);justify-content:start;align-content:center;gap:4px}
+  .compact .cpips{height:100%;container-type:size;gap:4px}
+  .compact .cp{flex:0 0 auto;width:min(calc((100cqw - 16px) / 5), 100cqh, 46px);height:auto;max-width:none;max-height:none;aspect-ratio:1}
+  .compact .cp-noise{width:min(calc((100cqw - 16px) / 5), 75cqh, 34px);aspect-ratio:3/4}
+  .compact .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 16px) / 5), calc((100cqh - 4px) / 2), 46px)}
+  .compact .cp-vol{font-size:clamp(11px,4vh,16px);font-weight:700}
+  .compact .tstep{height:100%;max-height:44px;width:78px}
+  .compact .cnum{font-size:20px}
+}
+@media (orientation:landscape) and (max-height:540px) and (max-width:640px){
+  .compact .crows{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:10px}
+  .compact .crow{grid-template-columns:22px minmax(0,1fr) 1.5em auto;gap:4px}
+  .compact .cic .ic{width:20px;height:20px}
+  .compact .tstep{width:58px}
+  .compact .tstep button{font-size:16px}
+  .compact .cnum{font-size:17px}
+  .compact .cpips{gap:3px}
+}
 </style>
 </head>
 <body>
@@ -509,7 +548,10 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
         <button class="die" id="die" aria-label="サイコロを振る">–</button>
         <div class="judge" id="judge"><span>・4以上</span><span>・偶数</span><span class="by">タップで振る</span></div>
         <button class="btn primary" id="endturn">ターン終了</button>
+        <button class="btn" id="undo" aria-label="直前の操作を戻す">↶ 戻す</button>
         <button class="btn danger" id="reset2" data-label="リセット" data-armed="もう一度で実行">リセット</button>
+        <button class="btn" id="setbtn2">設定</button>
+        <button class="btn" id="compactbtn2">簡潔</button>
       </div>
     </section>
     <section class="player" id="panel-bottom"></section>
@@ -634,7 +676,25 @@ function persist(){
   if (mode === 'offline') store.set('kt-offline', JSON.stringify(S));
   else if (role === 'host' && roomCode){ store.set('kt-host-state', JSON.stringify(S)); store.set('kt-last', JSON.stringify({role:'host', code:roomCode, at:Date.now()})); }
 }
+const hist = []; let histTick = false;
+function snapshot(){
+  if (mode !== 'offline' || histTick) return;
+  hist.push(JSON.stringify(S)); if (hist.length > 50) hist.shift();
+  histTick = true; setTimeout(() => { histTick = false; }, 0);
+}
+function undo(){
+  if (mode !== 'offline') return;
+  if (!hist.length){ toast('戻せる操作がありません'); return; }
+  const last = (S.game.log || [])[0];
+  S = JSON.parse(hist.pop());
+  const t = new Date(), ts = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+  S.game.log = [{ts, m: '↶ 取り消し：' + (last ? last.m : '直前の操作')}, ...(S.game.log || [])].slice(0, 40);
+  capMode.clear();
+  if (followOn() && S.game.first) bigP = S.game.active;
+  persist(); render(); toast('直前の操作を戻しました');
+}
 function patch(k, o){
+  snapshot();
   if (mode === 'online' && (seat === 'watch')){ toast('観戦中は操作できません'); return; }
   if (mode === 'online' && role === 'guest' && !(conn && conn.open)){ toast('接続されていません。再接続を待ってください'); return; }
   Object.assign(S[k], o);
@@ -651,6 +711,7 @@ function addLog(msg){
     return;
   }
   if (mode === 'online' && seat === 'watch' && role !== 'host') return;
+  snapshot();
   S.game.log = [e, ...(S.game.log || [])].slice(0, 40);
   if (mode === 'online' && role === 'host') broadcast(null, 0);
   persist(); render();
@@ -814,7 +875,7 @@ function adjust(p, k, d){
   addLog(`${pn(p)}：${NAME[k]} ${verb} ${d > 0 ? '+' : ''}${d} → ${nv}`);
 }
 function setVal(p, k, v){
-  const cur = S[p][k] || 0; const nv = Math.max(0, cur === v ? v - 1 : v);
+  const cur = S[p][k] || 0; const nv = Math.max(0, v);
   if (nv > capOf(p, k)){ toast(`${NAME[k]}の上限は${capOf(p, k)}です`); buzz(); return; }
   if (nv === cur) return;
   patch(p, {[k]: nv}); addLog(`${pn(p)}：${NAME[k]} を ${nv} に`);
@@ -844,6 +905,7 @@ function endTurn(){
   addLog(`${pn(g.active)} ターン終了 → ${pn(nx)} の番`);
   if (followOn()) bigP = nx;
   render();
+  if (mode === 'offline') toastAction(`${pn(nx)} の番になりました`, '元に戻す', undo);
 }
 function roll(){
   if (mode === 'online' && seat === 'watch'){ toast('観戦中は操作できません'); return; }
@@ -876,6 +938,7 @@ function resetMatch(btn){
   doReset();
 }
 function doReset(){
+  snapshot();
   const d = defaults();
   for (const p of ['p1','p2']){ d[p].name = S[p].name; Object.assign(S[p], d[p]); }
   const oe = !!S.game.oe; Object.assign(S.game, d.game); S.game.oe = oe;
@@ -1059,6 +1122,8 @@ function render(){
   $('artist').checked = !!g.artist; $('artist').disabled = !g.first;
   const oppTurn = !!g.first && mode === 'online' && seat !== g.active;
   $('endturn').disabled = !g.first || oppTurn;
+  $('undo').hidden = mode === 'online'; $('undo').disabled = !hist.length;
+  $('compactbtn2').setAttribute('aria-pressed', String(compact));
   $('endturn').textContent = oppTurn ? '相手の手番' : 'ターン終了';
 
   const d = g.dice, die = $('die');
@@ -1120,6 +1185,12 @@ function inviteURL(){ const u = new URL(location.href); u.search = ''; u.hash = 
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 let toastT;
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+function toastAction(msg, label, fn){
+  const t = $('toast'); t.textContent = msg + ' ';
+  const b = document.createElement('button'); b.className = 'tbtn'; b.textContent = label;
+  b.onclick = () => { t.hidden = true; clearTimeout(toastT); fn(); };
+  t.appendChild(b); t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 5000);
+}
 
 // ---------- events ----------
 document.addEventListener('click', e => {
@@ -1180,6 +1251,9 @@ const swapBig = () => { bigP = other(bigP); render(); };
 $('mini').addEventListener('click', e => { if (e.target.closest('[data-capsheet]')) return; swapBig(); });
 $('mini').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); swapBig(); } });
 $('endturn').onclick = endTurn;
+$('undo').onclick = undo;
+$('setbtn2').onclick = () => $('setbtn').click();
+$('compactbtn2').onclick = () => $('compactbtn').click();
 $('capsheet-x').onclick = () => { $('capsheet').hidden = true; };
 $('capsheet').addEventListener('click', e => { if (e.target === $('capsheet')) $('capsheet').hidden = true; });
 $('die').onclick = roll;
@@ -1204,7 +1278,7 @@ $('m-off').onclick = () => {
   if (mode === 'offline') return;
   teardown(); mode = 'offline'; seat = 'p1'; S = loadJSON('kt-offline') || defaults(); store.set('kt-mode', 'offline'); loadView(); bigP = followOn() && S.game.first ? S.game.active : 'p1'; render();
 };
-$('m-on').onclick = () => { if (mode === 'online') return; persist(); mode = 'online'; store.set('kt-mode', 'online'); S = defaults(); loadView(); render(); };
+$('m-on').onclick = () => { if (mode === 'online') return; persist(); hist.length = 0; mode = 'online'; store.set('kt-mode', 'online'); S = defaults(); loadView(); render(); };
 $('host').onclick = () => startHost(newCode(), null);
 $('join').onclick = () => {
   const c = $('joincode').value.trim().toUpperCase();
@@ -1227,15 +1301,19 @@ $('copylink').onclick = async () => {
 
 // wake lock
 let wl = null;
-async function setWake(on){
+async function setWake(on, quiet){
   try {
-    if (on){ wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); }
+    if (on){ if (wl) return; wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); }
     else if (wl){ await wl.release(); wl = null; }
-  } catch(e){ if (on){ toast('この端末では画面の常時点灯を設定できません'); $('wake').checked = false; } }
+  } catch(e){ if (on && !quiet){ toast('この端末では画面の常時点灯を設定できません'); $('wake').checked = false; store.set('kt-wake', '0'); } }
 }
 if (!('wakeLock' in navigator)) $('wakewrap').hidden = true;
-$('wake').onchange = e => setWake(e.target.checked);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && $('wake').checked && !wl) setWake(true); });
+$('wake').checked = store.get('kt-wake') !== '0';
+$('wake').onchange = e => { store.set('kt-wake', e.target.checked ? '1' : '0'); setWake(e.target.checked); };
+const wantWake = () => 'wakeLock' in navigator && $('wake').checked && document.visibilityState === 'visible' && !wl;
+document.addEventListener('visibilitychange', () => { if (wantWake()) setWake(true, true); });
+document.addEventListener('pointerdown', () => { if (wantWake()) setWake(true, true); }, {passive:true});
+if (wantWake()) setWake(true, true);
 
 // ---------- boot ----------
 buildPanel($('panel-top')); buildPanel($('panel-bottom'));
@@ -1262,6 +1340,9 @@ if (/^[A-Z0-9]{4}$/.test(qroom)){
   }
 }
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost')) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 </script>
 </body>
 </html>
