@@ -535,6 +535,21 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .dres.multi{flex-wrap:wrap;justify-content:center;white-space:normal;max-width:calc(100vw - 24px);border-radius:18px;row-gap:4px}
 .dres.multi b{letter-spacing:.08em}
 .dres .fpv b{font-size:26px;margin-left:4px}
+/* 先攻決めの結果：各自の側に名前・出目・勝ち負け */
+.dstage.fpres .dres{display:none}
+.dfp{position:absolute;left:50%;transform:translate(-50%,8px);display:flex;align-items:center;gap:10px;padding:8px 16px;border-radius:999px;background:rgba(23,20,39,.92);border:1px solid var(--line);color:var(--fg);font-size:14px;white-space:nowrap;opacity:0;transition:opacity .25s,transform .25s;display:none}
+.dstage.fpres .dfp{display:flex}
+.dstage.fpres.landed .dfp{opacity:1;transform:translate(-50%,0)}
+.dfp.up{transform:translate(-50%,-8px) rotate(180deg)}
+.dstage.fpres.landed .dfp.up{transform:translate(-50%,0) rotate(180deg)}
+.dfp b{font-family:var(--f-num);font-size:30px;line-height:1;color:var(--fg)}
+.dfp .nm{color:var(--muted)}
+.dfp.won{border-color:var(--gold);box-shadow:0 0 18px rgba(214,180,106,.35)}
+.dfp.won b,.dfp.won .rs{color:var(--gold);font-weight:700}
+.dstage.fpres.landed .dfp.lost{opacity:.75}
+.dfp .rs{font-size:13px;color:var(--dim)}
+.dstage.landed .dmover.dwin .dscene{filter:drop-shadow(0 0 14px rgba(214,180,106,.8))}
+.dstage.landed .dmover.dlose{opacity:.55;transition:opacity .3s}
 .dstage.centered .dres-main{top:calc(var(--by,50%) + var(--ds) * var(--sc,1.5) * .7)}
 .dstage.centered .dres-flip{bottom:calc(100% - var(--by,50%) + var(--ds) * var(--sc,1.5) * .7)}
 </style>
@@ -1287,7 +1302,7 @@ function buildDiceStage(){
   diceStage.innerHTML = `<div class="dveil"></div>
     ${Array.from({length: MAXD}, (_, i) => `<div class="dshadow" data-i="${i}"></div>`).join('')}
     ${Array.from({length: MAXD}, (_, i) => `<div class="dmover" data-i="${i}">${cube}<span class="dtag"></span></div>`).join('')}
-    <div class="dresult"><div class="dres dres-flip"></div><div class="dres dres-main"></div><div class="dhint">タップで閉じる</div></div>
+    <div class="dresult"><div class="dres dres-flip"></div><div class="dres dres-main"></div><div class="dfp" data-i="0"></div><div class="dfp" data-i="1"></div><div class="dhint">タップで閉じる</div></div>
     <div class="dpick"><div class="dcount" role="group" aria-label="振る個数">${[1,2,3,4,5].map(n => `<button type="button" data-dn="${n}">${n}個</button>`).join('')}</div>
       <span class="dpick-t"></span><small>サイコロの外側をタップするとやめます</small></div>`;
   document.body.appendChild(diceStage);
@@ -1366,7 +1381,8 @@ function closeDice(){
   clearTimeout(diceTimer); diceAnims.forEach(a => { try { a.cancel(); } catch(e){} }); diceAnims = [];
   diceSkip = null; pick = null;
   diceStage.classList.remove('on', 'landed', 'picking', 'pick-fp', 'centered'); diceStage.hidden = true;
-  diceStage.querySelectorAll('.dmover').forEach(m => m.classList.remove('grab', 'ready'));
+  diceStage.querySelectorAll('.dmover').forEach(m => m.classList.remove('grab', 'ready', 'dwin', 'dlose'));
+  diceStage.classList.remove('fpres');
   stopShuffle();
 }
 // サイコロボタンの表示（複数のときは出目を並べる）
@@ -1505,8 +1521,8 @@ function animateDie(mv, sh, cube, fr, dur, ds, F, r0){
   return a;
 }
 // 止まったサイコロを中央へ並べて大きく表示
-function centerDice(N, ds, ends, done){
-  const half = ds / 2, sc = rowScale(N, ds), row = rowPos(N, ds, sc);
+function centerDice(N, ds, ends, done, fp){
+  const half = ds / 2, L = fp ? fpLayout(ds) : null, sc = L ? L.sc : rowScale(N, ds), row = L ? L.pos : rowPos(N, ds, sc);
   clearTimeout(diceTimer); diceSkip = null;
   diceStage.style.setProperty('--bx', innerWidth / 2 + 'px'); diceStage.style.setProperty('--by', innerHeight / 2 + 'px');
   diceStage.style.setProperty('--sc', sc);
@@ -1520,8 +1536,30 @@ function centerDice(N, ds, ends, done){
   }
   first.onfinish = done;
 }
+// 先攻決めの結果：それぞれのサイコロを持ち主の側に置き、名前・出目・勝ち負けを添える
+function fpLayout(ds){
+  const W = innerWidth, H = innerHeight, bp = $('panel-bottom').dataset.p;
+  const sc = Math.min(1.35, H * 0.2 / ds), big = ds * sc;
+  const up = mode === 'offline' && viewMode === 'equal' && flipOn();
+  return {sc, pos: ['p1','p2'].map(p => [W / 2, p === bp ? H * 0.64 : H * 0.34]),
+    lab: ['p1','p2'].map(p => p === bp ? {top: H * 0.64 + big / 2 + 14} : {bottom: H - (H * 0.34 - big / 2 - 14), up})};
+}
+function setFpLabels(vs, ds){
+  const L = fpLayout(ds), [a, b] = vs, w = a === b ? null : (a > b ? 0 : 1);
+  ['p1','p2'].forEach((p, i) => {
+    const el = diceStage.querySelector(`.dfp[data-i="${i}"]`), lb = L.lab[i];
+    el.style.top = lb.top != null ? lb.top + 'px' : ''; el.style.bottom = lb.bottom != null ? lb.bottom + 'px' : '';
+    el.classList.toggle('up', !!lb.up); el.classList.toggle('won', w === i); el.classList.toggle('lost', w !== null && w !== i);
+    el.innerHTML = `<span class="nm">${esc(pn(p))}</span><b>${vs[i]}</b>` +
+      `<span class="rs">${w === null ? '同じ目：もう一度振ってください' : w === i ? '勝ち・先攻か後攻を選ぶ' : '負け'}</span>`;
+    dEl('.dmover', i).classList.toggle('dwin', w === i); dEl('.dmover', i).classList.toggle('dlose', w !== null && w !== i);
+  });
+}
 // 結果の吹き出しを用意（対面なら奥向きの吹き出しも）
 function setResultHTML(d, vs){
+  diceStage.classList.toggle('fpres', d.k === 'fp');
+  diceStage.querySelectorAll('.dmover').forEach(m => m.classList.remove('dwin', 'dlose'));
+  if (d.k === 'fp') setFpLabels(vs, diceSize(2));
   const N = vs.length, html = diceResultHTML(d, vs);
   const main = diceStage.querySelector('.dres-main'), fl = diceStage.querySelector('.dres-flip');
   main.innerHTML = html + (d.by && d.k !== 'fp' ? `<small>${esc(d.by)}</small>` : ''); fl.innerHTML = html;
@@ -1557,8 +1595,8 @@ function finishFirst(){
   rollFirst(null, vs, n);
   setResultHTML({k: 'fp'}, vs);
   const show = () => { diceStage.classList.add('landed'); stopShuffle(); };
-  diceSkip = () => { centerDice(2, ds, p.landed, show); diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); };
-  diceTimer = setTimeout(() => centerDice(2, ds, p.landed, show), 550);
+  diceSkip = () => { centerDice(2, ds, p.landed, show, true); diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); };
+  diceTimer = setTimeout(() => centerDice(2, ds, p.landed, show, true), 550);
 }
 function playDice(d){
   if (!diceStage) buildDiceStage();
@@ -1586,7 +1624,7 @@ function playDice(d){
   const mirrorT = mode === 'online' && !!d.s && d.s !== seat && d.s === topP;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // 中央に並べたときの位置と大きさ
-  const sc = rowScale(N, ds), row = rowPos(N, ds, sc);
+  const L = fp ? fpLayout(ds) : null, sc = L ? L.sc : rowScale(N, ds), row = L ? L.pos : rowPos(N, ds, sc);
   const finals = vs.map(v => finalOf(v, rnd(-14, 14)));
   let settled = false;
   const showResult = () => { if (!diceStage.classList.contains('landed')) diceStage.classList.add('landed'); stopShuffle(); };
@@ -1642,7 +1680,7 @@ function playDice(d){
   });
   setTimeout(() => buzz(), dur * 0.3); setTimeout(() => buzz(), dur * 0.6);
   // 止まったら少し止めてから、中央へ並べて大きく表示
-  const toCenter = () => centerDice(N, ds, ends, showResult);
+  const toCenter = () => centerDice(N, ds, ends, showResult, fp);
   a0.onfinish = () => {
     if (settled) return; settled = true; buzz(); stopShuffle();   // 転がり終わったら後ろのボタンにも出目を表示
     diceSkip = () => { diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); toCenter(); diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); };
