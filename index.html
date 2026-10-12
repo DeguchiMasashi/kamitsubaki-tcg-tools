@@ -1088,10 +1088,10 @@ function decideFirst(){
   if (mode === 'online' && seat === 'watch'){ toast('観戦中は操作できません'); return; }
   if ($('swipe').checked && mode === 'offline') openDicePicker('fp'); else rollFirst(null);
 }
-function rollFirst(throws){
-  let a = 1 + Math.floor(Math.random() * 6), b = 1 + Math.floor(Math.random() * 6);
+function rollFirst(throws, vals, n){
+  const [a, b] = vals || [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
   const t = throws ? throws.map(x => x ? normThrow(x) : null) : null;
-  const dice = {v: a, vs: [a, b], by: '先攻決め', n: Date.now(), s: null, r: Math.floor(Math.random() * 2147483647), t, k: 'fp'};
+  const dice = {v: a, vs: [a, b], by: '先攻決め', n: n || Date.now(), s: null, r: Math.floor(Math.random() * 2147483647), t, k: 'fp'};
   if (a === b){ patch('game', {dice, fp: null}); addLog(`先攻決め：${pn('p1')} ${a} / ${pn('p2')} ${b} → 同じ目、振り直し`); return; }
   const w = a > b ? 'p1' : 'p2';
   patch('game', {dice, fp:{p1:a, p2:b, w}}); addLog(`先攻決め：${pn('p1')} ${a} / ${pn('p2')} ${b} → ${pn(w)} が選択`);
@@ -1334,8 +1334,9 @@ function buildDiceStage(){
       const ang = Math.PI / 2 * up + (Math.random() - .5) * 1.4; vx = Math.cos(ang) * 1.1; vy = Math.sin(ang) * 1.1;
     }
     if (pick.kind === 'fp'){
-      pick.thrown[d.i] = {x: ref.x, y: ref.y, vx, vy}; mv.classList.add('ready'); buzz();
-      if (pick.thrown[0] && pick.thrown[1]){ const t = pick.thrown; diceStage.classList.remove('picking'); pick = null; rollFirst(t); }
+      pick.thrown[d.i] = true; buzz();
+      fpRollOne(d.i, {x: ref.x, y: ref.y, vx, vy});
+      if (pick.thrown[0] && pick.thrown[1]) diceStage.classList.remove('picking');   // 2つとも投げたら、あとは止まるのを待つ
       return;
     }
     pendingThrow = {x: ref.x, y: ref.y, vx, vy, at: Date.now()};
@@ -1421,7 +1422,7 @@ function layoutPick(){
     const cube = dEl('.dmover', i).querySelector('.dcube'), [fx, fy] = FACE_ROT[1 + (i * 2) % 6];
     const base = `rotateX(${fx - 20}deg) rotateY(${fy + 28}deg)`;
     cube.style.transform = base;
-    if (!reduce) diceAnims.push(cube.animate([{transform: base}, {transform: `rotateX(${fx - 28}deg) rotateY(${fy + 40}deg)`}, {transform: base}], {duration: 1800 + i * 170, iterations: Infinity, easing: 'ease-in-out'}));
+    if (!reduce){ const an = cube.animate([{transform: base}, {transform: `rotateX(${fx - 28}deg) rotateY(${fy + 40}deg)`}, {transform: base}], {duration: 1800 + i * 170, iterations: Infinity, easing: 'ease-in-out'}); diceAnims.push(an); pick.idle[i] = an; }
   }
   diceStage.querySelectorAll('[data-dn]').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.dn === diceN)));
 }
@@ -1430,7 +1431,7 @@ function openDicePicker(kind = 'roll'){
   if (!diceStage) buildDiceStage();
   closeDice();
   const W = innerWidth, H = innerHeight, bp = $('panel-bottom').dataset.p;
-  pick = {kind, drags: new Map(), thrown: [], g: {x: W / 2, y: H / 2}, pos: ['p1','p2'].map(p => ({x: W / 2, y: p === bp ? H * .72 : H * .28}))};
+  pick = {kind, drags: new Map(), thrown: [], landed: [], idle: [], vals: [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)], g: {x: W / 2, y: H / 2}, pos: ['p1','p2'].map(p => ({x: W / 2, y: p === bp ? H * .72 : H * .28}))};
   diceStage.querySelector('.dres-main').innerHTML = ''; diceStage.querySelector('.dres-flip').hidden = true;
   diceStage.querySelector('.dpick-t').textContent = kind === 'fp' ? 'それぞれ自分のサイコロをはじく（同時でもOK）' : 'サイコロをはじいて投げる';
   diceStage.classList.toggle('pick-fp', kind === 'fp');
@@ -1448,6 +1449,114 @@ function diceResultHTML(d, vs){
   const c4 = vs.filter(v => v >= 4).length, ce = vs.filter(v => v % 2 === 0).length, sum = vs.reduce((s, v) => s + v, 0);
   return `<b>${vs.join(' ')}</b><span class="${c4 ? 'y' : ''}">4以上 ${c4}個</span><span class="${ce ? 'y' : ''}">偶数 ${ce}個</span><span>合計 ${sum}</span>`;
 }
+// 止まったときの向き
+const finalOf = (v, tilt) => { const [fx, fy] = FACE_ROT[v]; return {tilt, fx, fy, t: `rotateZ(${tilt + 720}deg) rotateX(${fx + 1080}deg) rotateY(${fy + 720}deg)`}; };
+// 中央に横一列に並べるときの大きさと位置
+const rowScale = (N, ds) => Math.min(1.5, Math.max(.7, (innerWidth - 32) / (N * ds * 1.22)));
+const rowPos = (N, ds, sc) => Array.from({length: N}, (_, i) => [innerWidth / 2 + (i - (N - 1) / 2) * ds * sc * 1.22, innerHeight / 2]);
+// 物理：減速しながら進み、画面の端とほかのサイコロで跳ね返る。各サイコロの [x, y, 高さ, 時刻] を返す
+function simulate(bodies, ds, W, H, T){
+  const dt = 16, decay = Math.log(30) / T, half = ds / 2;
+  const mg = half + 6, minX = mg, maxX = W - mg, minY = mg, maxY = H - mg;
+  bodies.forEach(b => { b.in = b.in || (b.x >= minX && b.x <= maxX && b.y >= minY && b.y <= maxY); });
+  const frames = bodies.map(() => []);
+  for (let t = 0; t <= T; t += dt){
+    const f = Math.exp(-decay * dt);
+    for (const b of bodies){
+      if (b.fixed){ b.vx = b.vy = 0; continue; }
+      b.vx *= f; b.vy *= f; b.x += b.vx * dt; b.y += b.vy * dt;
+      if (!b.in){ if (b.x >= minX && b.x <= maxX && b.y >= minY && b.y <= maxY) b.in = true; continue; }
+      if (b.x < minX){ b.x = 2 * minX - b.x; b.vx = -b.vx * 0.7; } if (b.x > maxX){ b.x = 2 * maxX - b.x; b.vx = -b.vx * 0.7; }
+      if (b.y < minY){ b.y = 2 * minY - b.y; b.vy = -b.vy * 0.7; } if (b.y > maxY){ b.y = 2 * maxY - b.y; b.vy = -b.vy * 0.7; }
+    }
+    for (let i = 0; i < bodies.length; i++) for (let j = i + 1; j < bodies.length; j++){
+      const a = bodies[i], b = bodies[j]; if (!a.in || !b.in) continue;
+      let dx = b.x - a.x, dy = b.y - a.y, dist = Math.hypot(dx, dy); const minD = ds * 0.95;
+      if (dist >= minD) continue;
+      if (dist < 0.01){ dx = 1; dy = 0; dist = 1; }
+      const nx = dx / dist, ny = dy / dist, ov = minD - dist;
+      // fixed は動かないサイコロ（まだ投げていない・もう止まった方）
+      const wa = a.fixed ? 0 : (b.fixed ? 1 : .5), wb = b.fixed ? 0 : (a.fixed ? 1 : .5);
+      a.x -= nx * ov * wa; a.y -= ny * ov * wa; b.x += nx * ov * wb; b.y += ny * ov * wb;
+      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+      if (rv < 0){ const j2 = -(1 + 0.8) * rv; a.vx -= j2 * nx * wa; a.vy -= j2 * ny * wa; b.vx += j2 * nx * wb; b.vy += j2 * ny * wb; }
+    }
+    bodies.forEach((b, i) => {
+      const z = ds * 0.9 * Math.abs(Math.sin(Math.PI * (t / (T / 2.6) + (b.ph || 0)))) * Math.exp(-2.6 * t / T);
+      frames[i].push([b.x, b.y, z, t]);
+    });
+  }
+  return frames;
+}
+// 1個のサイコロを軌道どおりに動かし、回しながら出目の向きで止める
+function animateDie(mv, sh, cube, fr, dur, ds, F, r0){
+  const half = ds / 2, H = innerHeight;
+  const kf = fn => [...fr.map(f => ({...fn(f), offset: Math.min(1, f[3] / dur)})), {...fn(fr[fr.length - 1]), offset: 1}];
+  diceAnims.push(mv.animate(kf(([x, y, z]) => ({transform: `translate(${x - half}px, ${y - half - z}px)`})), {duration: dur, fill: 'forwards'}));
+  diceAnims.push(sh.animate(kf(([x, y, z]) => ({transform: `translate(${x - half}px, ${y + half * 0.75}px) scale(${Math.max(0.4, 1 - z / (ds * 2))})`, opacity: (y > H || y < 0) ? 0 : Math.max(0.2, 0.85 - z / (ds * 2))})), {duration: dur, fill: 'forwards'}));
+  // 回転は止まる直前まで続ける（途中で目が次々と入れ替わって見える）
+  const r1 = [F.tilt + 720, F.fx + 1080, F.fy + 720];
+  const rotAt = p => { const [z, x, y] = r0.map((s, k) => s + (r1[k] - s) * p); return `rotateZ(${z}deg) rotateX(${x}deg) rotateY(${y}deg)`; };
+  const a = cube.animate([{transform: rotAt(0)}, {transform: rotAt(.45), offset: .3}, {transform: rotAt(.8), offset: .6}, {transform: rotAt(.96), offset: .78}, {transform: F.t, offset: .86}, {transform: F.t}], {duration: dur, fill: 'forwards'});
+  diceAnims.push(a);
+  return a;
+}
+// 止まったサイコロを中央へ並べて大きく表示
+function centerDice(N, ds, ends, done){
+  const half = ds / 2, sc = rowScale(N, ds), row = rowPos(N, ds, sc);
+  clearTimeout(diceTimer); diceSkip = null;
+  diceStage.style.setProperty('--bx', innerWidth / 2 + 'px'); diceStage.style.setProperty('--by', innerHeight / 2 + 'px');
+  diceStage.style.setProperty('--sc', sc);
+  diceStage.classList.add('centered');
+  let first = null;
+  for (let i = 0; i < N; i++){
+    const [xf, yf] = ends[i];
+    const an = dEl('.dmover', i).animate([{transform: `translate(${xf - half}px, ${yf - half}px) scale(1)`}, {transform: `translate(${row[i][0] - half}px, ${row[i][1] - half}px) scale(${sc})`}], {duration: 450, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'forwards'});
+    diceAnims.push(an, dEl('.dshadow', i).animate([{opacity: 0.85}, {opacity: 0}], {duration: 300, fill: 'forwards'}));
+    if (!first) first = an;
+  }
+  first.onfinish = done;
+}
+// 結果の吹き出しを用意（対面なら奥向きの吹き出しも）
+function setResultHTML(d, vs){
+  const N = vs.length, html = diceResultHTML(d, vs);
+  const main = diceStage.querySelector('.dres-main'), fl = diceStage.querySelector('.dres-flip');
+  main.innerHTML = html + (d.by && d.k !== 'fp' ? `<small>${esc(d.by)}</small>` : ''); fl.innerHTML = html;
+  fl.hidden = !(mode === 'offline' && viewMode === 'equal' && flipOn());
+  main.classList.toggle('multi', N > 1); fl.classList.toggle('multi', N > 1);
+}
+// 先攻決め（1台）：はじいたサイコロから順に転がす。2つとも止まったら結果
+function fpRollOne(i, th){
+  const W = innerWidth, H = innerHeight, ds = diceSize(2), dur = 2000, T = dur * 0.86;
+  const sp = Math.hypot(th.vx, th.vy) || 1, k = Math.min(3.2, Math.max(0.9, sp)) / sp;
+  const body = {x: th.x, y: th.y, vx: th.vx * k, vy: th.vy * k, in: true, ph: Math.random() * 0.6};
+  // もう片方のサイコロ（待っている・止まった）には当たって跳ね返る
+  const j = 1 - i, other = pick.landed[j] ? {x: pick.landed[j][0], y: pick.landed[j][1]} : (!pick.thrown[j] ? pick.pos[j] : null);
+  const bodies = [body]; if (other) bodies.push({x: other.x, y: other.y, vx: 0, vy: 0, in: true, fixed: true});
+  const fr = simulate(bodies, ds, W, H, T)[0];
+  const mv = dEl('.dmover', i), cube = mv.querySelector('.dcube');
+  if (pick.idle[i]){ try { pick.idle[i].cancel(); } catch(e){} }
+  mv.classList.remove('ready');
+  const r0 = [(Math.random() - .5) * 180, -Math.random() * 200, -Math.random() * 200];
+  const a = animateDie(mv, dEl('.dshadow', i), cube, fr, dur, ds, finalOf(pick.vals[i], (Math.random() - .5) * 28), r0);
+  setTimeout(() => buzz(), dur * 0.3);
+  const p = pick;
+  a.onfinish = () => {
+    if (pick !== p) return;
+    buzz(); p.landed[i] = fr[fr.length - 1];
+    if (p.landed[0] && p.landed[1]) finishFirst();
+  };
+}
+function finishFirst(){
+  const p = pick, vs = p.vals, n = Date.now(), ds = diceSize(2);
+  pick = null; diceStage.classList.remove('picking');
+  lastDie = n; shownDie = n;           // 状態に記録しても演出はもう一度流さない
+  rollFirst(null, vs, n);
+  setResultHTML({k: 'fp'}, vs);
+  const show = () => { diceStage.classList.add('landed'); stopShuffle(); };
+  diceSkip = () => { centerDice(2, ds, p.landed, show); diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); };
+  diceTimer = setTimeout(() => centerDice(2, ds, p.landed, show), 550);
+}
 function playDice(d){
   if (!diceStage) buildDiceStage();
   closeDice();
@@ -1457,11 +1566,7 @@ function playDice(d){
   // 転がしてきた方向：対面表示で奥の人が振ったら上から、それ以外は下から
   const topP = $('panel-top').dataset.p;
   const sideTop = p => !!p && p === topP && (viewMode === 'equal' || mode === 'online');
-  const flipRead = mode === 'offline' && viewMode === 'equal' && flipOn();
-  const html = diceResultHTML(d, vs);
-  const main = diceStage.querySelector('.dres-main'), fl = diceStage.querySelector('.dres-flip');
-  main.innerHTML = html + (d.by && !fp ? `<small>${esc(d.by)}</small>` : ''); fl.innerHTML = html; fl.hidden = !flipRead;
-  main.classList.toggle('multi', N > 1); fl.classList.toggle('multi', N > 1);
+  setResultHTML(d, vs);
   diceStage.hidden = false; void diceStage.offsetWidth; diceStage.classList.add('on'); shownDie = d.n;
   const M = [], C = [], SH = [];
   for (let i = 0; i < MAXD; i++){
@@ -1478,9 +1583,8 @@ function playDice(d){
   const mirrorT = mode === 'online' && !!d.s && d.s !== seat && d.s === topP;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // 中央に並べたときの位置と大きさ
-  const sc = Math.min(1.5, Math.max(.7, (W - 32) / (N * ds * 1.22)));
-  const row = vs.map((_, i) => [cx + (i - (N - 1) / 2) * ds * sc * 1.22, cy]);
-  const finals = vs.map(v => { const [fx, fy] = FACE_ROT[v], tilt = rnd(-14, 14); return {tilt, fx, fy, t: `rotateZ(${tilt + 720}deg) rotateX(${fx + 1080}deg) rotateY(${fy + 720}deg)`}; });
+  const sc = rowScale(N, ds), row = rowPos(N, ds, sc);
+  const finals = vs.map(v => finalOf(v, rnd(-14, 14)));
   let settled = false;
   const showResult = () => { if (!diceStage.classList.contains('landed')) diceStage.classList.add('landed'); stopShuffle(); };
   if (reduce){
@@ -1522,64 +1626,20 @@ function playDice(d){
   } else {
     for (let i = 0; i < N; i++) bodies.push(entry(i, sideTop(d.s)));
   }
-  // 物理：減速しながら進み、画面の端とほかのサイコロで跳ね返る
-  const mg = half + 6, minX = mg, maxX = W - mg, minY = mg, maxY = H - mg;
-  bodies.forEach(b => { b.ph = rnd(0, 0.6); b.in = b.in || (b.x >= minX && b.x <= maxX && b.y >= minY && b.y <= maxY); });
-  const frames = bodies.map(() => []);
-  for (let t = 0; t <= T; t += dt){
-    const f = Math.exp(-decay * dt);
-    for (const b of bodies){
-      b.vx *= f; b.vy *= f; b.x += b.vx * dt; b.y += b.vy * dt;
-      if (!b.in){ if (b.x >= minX && b.x <= maxX && b.y >= minY && b.y <= maxY) b.in = true; continue; }
-      if (b.x < minX){ b.x = 2 * minX - b.x; b.vx = -b.vx * 0.7; } if (b.x > maxX){ b.x = 2 * maxX - b.x; b.vx = -b.vx * 0.7; }
-      if (b.y < minY){ b.y = 2 * minY - b.y; b.vy = -b.vy * 0.7; } if (b.y > maxY){ b.y = 2 * maxY - b.y; b.vy = -b.vy * 0.7; }
-    }
-    for (let i = 0; i < bodies.length; i++) for (let j = i + 1; j < bodies.length; j++){
-      const a = bodies[i], b = bodies[j]; if (!a.in || !b.in) continue;
-      let dx = b.x - a.x, dy = b.y - a.y, dist = Math.hypot(dx, dy); const minD = ds * 0.95;
-      if (dist >= minD) continue;
-      if (dist < 0.01){ dx = 1; dy = 0; dist = 1; }
-      const nx = dx / dist, ny = dy / dist, push = (minD - dist) / 2;
-      a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push;
-      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-      if (rv < 0){ const j2 = -(1 + 0.8) * rv / 2; a.vx -= j2 * nx; a.vy -= j2 * ny; b.vx += j2 * nx; b.vy += j2 * ny; }
-    }
-    bodies.forEach((b, i) => {
-      const z = ds * 0.9 * Math.abs(Math.sin(Math.PI * (t / (T / 2.6) + b.ph))) * Math.exp(-2.6 * t / T);
-      frames[i].push([b.x, b.y, z, t]);
-    });
-  }
+  bodies.forEach(b => { b.ph = rnd(0, 0.6); });
+  const frames = simulate(bodies, ds, W, H, T);
   const ends = frames.map(fr => fr[fr.length - 1]);
   const mx = ends.reduce((s, e) => s + e[0], 0) / N, my = ends.reduce((s, e) => s + e[1], 0) / N;
   diceStage.style.setProperty('--bx', Math.min(W - 150, Math.max(150, mx)) + 'px');
   diceStage.style.setProperty('--by', Math.min(H - ds * 0.9 - 120, Math.max(ds * 0.9 + 70, my)) + 'px');
   let a0 = null;
   frames.forEach((fr, i) => {
-    const kf = fn => [...fr.map(f => ({...fn(f), offset: Math.min(1, f[3] / dur)})), {...fn(fr[fr.length - 1]), offset: 1}];
-    diceAnims.push(M[i].animate(kf(([x, y, z]) => ({transform: `translate(${x - half}px, ${y - half - z}px)`})), {duration: dur, fill: 'forwards'}));
-    diceAnims.push(SH[i].animate(kf(([x, y, z]) => ({transform: `translate(${x - half}px, ${y + half * 0.75}px) scale(${Math.max(0.4, 1 - z / (ds * 2))})`, opacity: (y > H || y < 0) ? 0 : Math.max(0.2, 0.85 - z / (ds * 2))})), {duration: dur, fill: 'forwards'}));
-    // 回転は止まる直前まで続ける（途中で目が次々と入れ替わって見える）
-    const F = finals[i], r0 = [rnd(-90, 90), rnd(-200, 0), rnd(-200, 0)], r1 = [F.tilt + 720, F.fx + 1080, F.fy + 720];
-    const rotAt = p => { const [z, x, y] = r0.map((s, k) => s + (r1[k] - s) * p); return `rotateZ(${z}deg) rotateX(${x}deg) rotateY(${y}deg)`; };
-    const a = C[i].animate([{transform: rotAt(0)}, {transform: rotAt(.45), offset: .3}, {transform: rotAt(.8), offset: .6}, {transform: rotAt(.96), offset: .78}, {transform: F.t, offset: .86}, {transform: F.t}], {duration: dur, fill: 'forwards'});
-    diceAnims.push(a); if (i === 0) a0 = a;
+    const r0 = [rnd(-90, 90), rnd(-200, 0), rnd(-200, 0)];
+    const a = animateDie(M[i], SH[i], C[i], fr, dur, ds, finals[i], r0); if (i === 0) a0 = a;
   });
   setTimeout(() => buzz(), dur * 0.3); setTimeout(() => buzz(), dur * 0.6);
   // 止まったら少し止めてから、中央へ並べて大きく表示
-  const toCenter = () => {
-    clearTimeout(diceTimer); diceSkip = null;
-    diceStage.style.setProperty('--bx', cx + 'px'); diceStage.style.setProperty('--by', cy + 'px');
-    diceStage.style.setProperty('--sc', sc);
-    diceStage.classList.add('centered');
-    let m2 = null;
-    M.forEach((m, i) => {
-      const [xf, yf] = ends[i];
-      const an = m.animate([{transform: `translate(${xf - half}px, ${yf - half}px) scale(1)`}, {transform: `translate(${row[i][0] - half}px, ${row[i][1] - half}px) scale(${sc})`}], {duration: 450, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'forwards'});
-      diceAnims.push(an, SH[i].animate([{opacity: 0.85}, {opacity: 0}], {duration: 300, fill: 'forwards'}));
-      if (i === 0) m2 = an;
-    });
-    m2.onfinish = showResult;
-  };
+  const toCenter = () => centerDice(N, ds, ends, showResult);
   a0.onfinish = () => {
     if (settled) return; settled = true; buzz(); stopShuffle();   // 転がり終わったら後ろのボタンにも出目を表示
     diceSkip = () => { diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); toCenter(); diceAnims.forEach(x => { try { x.finish(); } catch(e){} }); };
