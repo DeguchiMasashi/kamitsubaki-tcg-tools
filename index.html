@@ -1290,7 +1290,7 @@ function pipSVG(v){
 const FACE_ROT = {1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180]};
 const MAXD = 5;
 let diceN = Math.min(MAXD, Math.max(1, parseInt(store.get('kt-dicen'), 10) || 1));
-let diceStage = null, diceTimer = null, diceAnims = [], pendingThrow = null, diceSkip = null, pick = null;
+let ignoreClickUntil = 0, diceStage = null, diceTimer = null, diceAnims = [], pendingThrow = null, diceSkip = null, pick = null;
 const dEl = (sel, i) => diceStage.querySelector(`${sel}[data-i="${i}"]`);
 // 何個かまとめて置くときの並び（サイコロの大きさ×1.1 を単位にしたずれ）
 const CLUSTER = {1:[[0,0]], 2:[[-.6,0],[.6,0]], 3:[[-.6,.5],[.6,.5],[0,-.55]], 4:[[-.6,-.6],[.6,-.6],[-.6,.6],[.6,.6]], 5:[[-1.1,-.55],[0,-.55],[1.1,-.55],[-.55,.6],[.55,.6]]};
@@ -1307,6 +1307,8 @@ function buildDiceStage(){
       <span class="dpick-t"></span><small>サイコロの外側をタップするとやめます</small></div>`;
   document.body.appendChild(diceStage);
   diceStage.addEventListener('click', e => {
+    // はじいた直後のクリックは無視（iPhoneでは指を離した位置の要素にクリックが届き、背景をタップした扱いになるため）
+    if (performance.now() < ignoreClickUntil) return;
     if (diceStage.classList.contains('picking')){
       const c = e.target.closest('[data-dn]');
       if (c){ setDiceN(+c.dataset.dn); layoutPick(); return; }
@@ -1340,7 +1342,7 @@ function buildDiceStage(){
   });
   const release = e => {
     const d = pick && pick.drags.get(e.pointerId); if (!d) return;
-    pick.drags.delete(e.pointerId);
+    pick.drags.delete(e.pointerId); ignoreClickUntil = performance.now() + 500;
     const mv = dEl('.dmover', d.i); mv.classList.remove('grab');
     if (e.type === 'pointercancel') return;
     const ref = pick.kind === 'fp' ? pick.pos[d.i] : pick.g;
