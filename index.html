@@ -400,6 +400,8 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .sheet-in{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:14px;width:100%;max-width:480px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -10px 40px rgba(0,0,0,.5)}
 .sheet-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sheet-h b{font-family:var(--f-disp);font-size:16px}
+.sheet.center{align-items:center;padding-top:12px}
+#fpchoose{flex-wrap:wrap}
 .sheet .caprow{grid-template-columns:28px minmax(0,1fr) auto}
 .mini .capbtn{background:transparent;color:var(--warn);border-color:rgba(242,166,90,.5);cursor:pointer;flex:0 0 auto}
 .win .row .btn{min-height:40px}
@@ -647,13 +649,6 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
     </section>
     <section class="player" id="panel-bottom"></section>
     <div class="more" id="more">
-      <div class="card sec" id="fpcard" data-sec="fp">
-        <button class="sec-head"><span class="chev">▾</span><span class="lbl">先攻・後攻</span></button>
-        <div class="sec-body">
-          <div class="row"><button class="btn" id="decide">サイコロで決める</button><span class="note">大きい目のプレイヤーが選びます</span></div>
-          <div class="row" id="fpchoose" hidden></div>
-        </div>
-      </div>
       <div class="card sec" id="logcard" data-sec="log">
         <button class="sec-head"><span class="chev">▾</span><span class="lbl">ログ</span></button>
         <div class="sec-body"><ul class="log" id="log"></ul></div>
@@ -669,6 +664,14 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
       <p class="foot">ルールは <a href="https://tcg.kamitsubaki.jp/" target="_blank" rel="noopener">公式サイト</a> を参照。非公式のファンメイドツールです。</p>
     </div>
   </main>
+</div>
+<div class="sheet center" id="fpsheet" hidden role="dialog" aria-label="先攻・後攻を決める">
+  <div class="sheet-in">
+    <div class="sheet-h"><b>先攻・後攻を決める</b><button class="btn" id="fpsheet-x">閉じる</button></div>
+    <div class="row"><button class="btn primary" id="decide">サイコロで決める</button><span class="note">2人が1個ずつ振り、大きい目の人が選びます</span></div>
+    <div class="row" id="fpchoose" hidden></div>
+    <p class="note">決まったら、お互いに7枚引きます（先攻1ターン目はドローしません）。</p>
+  </div>
 </div>
 <div class="sheet" id="capsheet" hidden role="dialog" aria-label="上限の変更" data-p="p2">
   <div class="sheet-in">
@@ -827,7 +830,7 @@ function setBtnLabel(btn, text){
   if (btn.dataset.cur === text) return; btn.dataset.cur = text;
   btn.innerHTML = `<span class="ln">${text}</span><span class="lf" aria-hidden="true">${text}</span>`;
 }
-function closeSettings(){ $('settings').hidden = true; $('setbtn').setAttribute('aria-expanded', 'false'); }
+function closeSettings(){ $('settings').hidden = true; $('setbtn').setAttribute('aria-expanded', 'false'); render(); }
 const TURN_KEYS = ['active','turn','phase','artist'];
 // 対面表示が実際に効いているか（マウス操作のPCで横並びのときは回転しない）
 const pcWide = matchMedia('(min-width:1000px) and (pointer:fine)');
@@ -1056,7 +1059,7 @@ function toggleLimited(p){
 }
 function setPhase(ph){ if (S.game.phase === ph) return; if (!myTurn()){ toast('相手の手番です'); return; } patch('game', {phase: ph}); addLog(`${pn(S.game.active)}：${PH[ph]}フェーズ`); }
 function endTurn(){
-  if (!S.game.first) return;
+  if (!S.game.first){ fpClosed = false; render(); return; }   // まだ決まっていなければ先攻・後攻のポップアップを開く
   if (!myTurn()){ toast('相手の手番です。ターン終了は手番のプレイヤーが押します'); return; }
   const g = S.game, nx = other(g.active);
   patch('game', {active: nx, turn: (g.turn || 1) + 1, phase: 'draw', artist: false});
@@ -1368,7 +1371,7 @@ function closeDice(){
 }
 // サイコロボタンの表示（複数のときは出目を並べる）
 function dieFace(d){
-  if (!d) return '–';
+  if (!d || d.k === 'fp') return '–';
   const vs = d.vs && d.vs.length ? d.vs : [d.v];
   return vs.length === 1 ? pipSVG(vs[0]) : `<span class="dvals${vs.length > 3 ? ' many' : ''}">${vs.join(' ')}</span>`;
 }
@@ -1649,12 +1652,12 @@ function playDice(d){
 
 // ---------- render ----------
 function hintFor(g){
-  if (!g.first) return ['下の「先攻・後攻」でサイコロを振り、勝った方が<b>先攻か後攻を選ぶ</b>','お互いに<b>7枚</b>引く。単体で出せるArtistがいなければ手札を見せて<b>引き直し</b>'];
+  if (!g.first) return ['「先攻・後攻」でサイコロを振り、勝った方が<b>先攻か後攻を選ぶ</b>','お互いに<b>7枚</b>引く。単体で出せるArtistがいなければ手札を見せて<b>引き直し</b>'];
   if (g.phase === 'draw') return g.turn === 1 ? ['<b>先攻1ターン目はドローしません</b>'] : ['山札から<b>1枚</b>引く（引けなければ<b>敗北</b>）'];
   if (g.phase === 'act') return ['Artist：手札から<b>1ターン1枚</b>、Standby（横）で。センターが空なら必ずセンター','Activeの各Artistで<b>Song 1回</b>（タイプ一致／ALL）。センターなら<b>センター効果</b>も','特殊能力・Magic・Directionは好きな順で（Directionは最大5・同名1枚）'];
   return ['使ったSongを<b>全てトラッシュ</b>','StandbyのArtistを<b>Active（縦）</b>に','使ったDirectionの向きを戻す'];
 }
-let lastDie = null;
+let lastDie = null, fpClosed = false, prevFirst = null;
 function render(){
   const app = $('app');
   app.classList.toggle('view-focus', viewMode === 'focus');
@@ -1690,10 +1693,10 @@ function render(){
   $('hint').innerHTML = hintFor(g).map(h => `<li>${h}</li>`).join('');
   $('artist').checked = !!g.artist; $('artist').disabled = !g.first;
   const oppTurn = !!g.first && mode === 'online' && seat !== g.active;
-  $('endturn').disabled = !g.first || oppTurn;
+  $('endturn').disabled = oppTurn;
   $('undo').hidden = mode === 'online'; $('undo').disabled = !hist.length;
   $('compactbtn2').setAttribute('aria-pressed', String(compact));
-  setBtnLabel($('endturn'), oppTurn ? '相手の手番' : 'ターン終了');
+  setBtnLabel($('endturn'), !g.first ? '先攻・後攻' : oppTurn ? '相手の手番' : 'ターン終了');
 
   const d = g.dice, die = $('die');
   if (d && d.n !== lastDie){
@@ -1718,7 +1721,11 @@ function render(){
   }
   js[2].textContent = d ? (d.k === 'fp' ? '先攻決めのサイコロ' : `${d.by} が振りました`) : 'タップで振る';
 
-  $('fpcard').hidden = !!g.first && !g.fp;
+  // 先攻・後攻のポップアップ：まだ決まっていなければ出す（閉じたら「先攻・後攻」ボタンで開き直せる）
+  if (prevFirst && !g.first) fpClosed = false;
+  prevFirst = g.first;
+  $('fpsheet').hidden = !!g.first || fpClosed || !$('settings').hidden;   // 設定を開いている間は出さない
+  setBtnLabel($('decide'), g.fp ? 'もう一度振る' : 'サイコロで決める'); $('decide').classList.toggle('primary', !g.fp);
   const fc = $('fpchoose');
   if (g.fp){
     fc.hidden = false;
@@ -1838,6 +1845,8 @@ $('endturn').onclick = endTurn;
 $('undo').onclick = undo;
 $('setbtn2').onclick = () => $('setbtn').click();
 $('compactbtn2').onclick = () => $('compactbtn').click();
+$('fpsheet-x').onclick = () => { fpClosed = true; render(); };
+$('fpsheet').addEventListener('click', e => { if (e.target === $('fpsheet')){ fpClosed = true; render(); } });
 $('capsheet-x').onclick = () => { $('capsheet').hidden = true; };
 $('capsheet').addEventListener('click', e => { if (e.target === $('capsheet')) $('capsheet').hidden = true; });
 $('die').onclick = () => { if ($('swipe').checked) openDicePicker(); else roll(); };
@@ -1847,7 +1856,7 @@ $('decide').onclick = decideFirst;
 $('reset').onclick = e => resetMatch(e.currentTarget);
 $('reset2').onclick = e => resetMatch(e.currentTarget);
 $('artist').onchange = e => { if (!myTurn()){ e.target.checked = !!S.game.artist; toast('相手の手番です'); return; } patch('game', {artist:e.target.checked}); if (e.target.checked) addLog(`${pn(S.game.active)}：Artistを登場させた`); };
-$('setbtn').onclick = () => { const s = $('settings'); s.hidden = !s.hidden; $('setbtn').setAttribute('aria-expanded', String(!s.hidden)); };
+$('setbtn').onclick = () => { const s = $('settings'); s.hidden = !s.hidden; $('setbtn').setAttribute('aria-expanded', String(!s.hidden)); render(); };
 $('compactbtn').onclick = () => { compact = !compact; store.set('kt-compact', compact ? '1' : ''); render(); };
 $('v-focus').onclick = () => { viewMode = 'focus'; store.set(viewKey(), viewMode); if (followOn() && S.game.first) bigP = S.game.active; render(); };
 $('v-equal').onclick = () => { viewMode = 'equal'; store.set(viewKey(), viewMode); if (mode === 'offline') bigP = 'p1'; render(); };
@@ -1858,7 +1867,7 @@ $('oe').onchange = e => {
   patch('game', {oe: e.target.checked});
   addLog(e.target.checked ? '設定：相手の数値も操作できるようにしました' : '設定：自分の数値だけ操作できるようにしました');
 };
-$('setclose').onclick = () => { $('settings').hidden = true; $('setbtn').setAttribute('aria-expanded','false'); };
+$('setclose').onclick = () => closeSettings();
 $('netpill').onclick = () => $('setbtn').click();
 $('follow').onchange = e => store.set('kt-follow', e.target.checked ? '1' : '0');
 $('m-off').onclick = () => {
