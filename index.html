@@ -419,6 +419,43 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .compact .crow[data-tk="vol"] .cpips{display:grid;grid-template-columns:repeat(5,auto);grid-template-rows:repeat(2,auto);justify-content:start;align-content:center;gap:4px;height:100%;container-type:size}
   .compact .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 16px) / 5), calc((100cqh - 4px) / 2), 46px);height:auto;max-width:none;max-height:none;aspect-ratio:1;font-size:13px;font-weight:700}
 }
+/* 縦向きの「自分を大きく」（1人表示）：数字はアイコンの下、＋−は縦並びにして、丸をできるだけ大きく */
+@media (max-width:999px) and (min-height:600px){
+  .view-focus.compact #panel-bottom .crows{gap:8px}
+  .view-focus.compact #panel-bottom .crow{grid-template-columns:48px minmax(0,1fr) 58px;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"ic pips step" "num pips step";column-gap:10px;row-gap:0;padding:2px 4px}
+  .view-focus.compact #panel-bottom .cic{grid-area:ic;height:auto;align-self:end}
+  .view-focus.compact #panel-bottom .cic .ic{width:40px;height:40px}
+  .view-focus.compact #panel-bottom .cnum{grid-area:num;text-align:center;font-size:32px;align-self:start;padding-top:2px}
+  .view-focus.compact #panel-bottom .cnum small{font-size:.5em}
+  .view-focus.compact #panel-bottom .cpips{grid-area:pips;height:100%;container-type:size;gap:6px}
+  .view-focus.compact #panel-bottom .cp{flex:0 0 auto;width:min(calc((100cqw - 24px) / 5), 100cqh, 64px);height:auto;max-width:none;max-height:none;aspect-ratio:1}
+  .view-focus.compact #panel-bottom .cp-tk,.view-focus.compact #panel-bottom .cp-vol{border-width:2px}
+  .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cp{width:min(calc((100cqw - 24px) / 5), 75cqh, 52px);aspect-ratio:3/4;border-radius:5px}
+  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cpips{gap:6px}
+  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 24px) / 5), calc((100cqh - 6px) / 2), 64px);font-size:clamp(13px,4cqw,18px)}
+  .view-focus.compact #panel-bottom .tstep{grid-area:step;grid-template-columns:1fr;grid-template-rows:1fr 1fr;width:58px;height:100%;max-height:none;min-height:56px;border-radius:12px}
+  .view-focus.compact #panel-bottom .tstep button{font-size:26px}
+  .view-focus.compact #panel-bottom .tstep button:first-child{order:2}
+  .view-focus.compact #panel-bottom .tstep button+button{border-left:0;border-bottom:1px solid var(--line)}
+}
+/* タブレット縦の1人表示：さらに大きく */
+@media (min-width:600px) and (max-width:999px) and (min-height:700px){
+  .view-focus.compact #panel-bottom .crow{grid-template-columns:72px minmax(0,1fr) 84px;column-gap:16px}
+  .view-focus.compact #panel-bottom .cic .ic{width:58px;height:58px}
+  .view-focus.compact #panel-bottom .cnum{font-size:44px}
+  .view-focus.compact #panel-bottom .cpips,.view-focus.compact #panel-bottom .crow[data-tk="vol"] .cpips{gap:12px}
+  .view-focus.compact #panel-bottom .cp{width:min(calc((100cqw - 48px) / 5), 100cqh, 104px)}
+  .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cp{width:min(calc((100cqw - 48px) / 5), 75cqh, 80px)}
+  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 48px) / 5), calc((100cqh - 12px) / 2), 104px);font-size:22px}
+  .view-focus.compact #panel-bottom .tstep{width:84px}
+  .view-focus.compact #panel-bottom .tstep button{font-size:34px}
+}
+@media (max-width:999px) and (min-height:600px) and (max-height:699px){
+  .view-focus.compact #panel-bottom .crows{gap:4px}
+  .view-focus.compact #panel-bottom .cic .ic{width:30px;height:30px}
+  .view-focus.compact #panel-bottom .cnum{font-size:24px;padding-top:0}
+  .view-focus.compact #panel-bottom .tstep button{font-size:22px}
+}
 @media (max-width:380px){.compact #ctrl{gap:5px}.compact #endturn{white-space:nowrap;padding:6px 8px}.compact #undo,.compact #reset2{padding:6px 8px;font-size:12px}}
 /* スマホ横向き（簡潔表示）：上部バーを省き、各プレイヤーを2列に */
 @media (orientation:landscape) and (max-height:540px){
