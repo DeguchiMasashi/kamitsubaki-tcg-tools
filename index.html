@@ -7,12 +7,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="LIVEカウンター">
+<meta name="apple-mobile-web-app-title" content="tokenカウンター">
 <meta name="description" content="神椿TCG（KAMITSUBAKI CARD GAME）のVOL・魔力・ターン進行・サイコロを管理するカウンター。ログイン不要、対戦コードでスマホ同士も同期。">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>神椿 LIVEカウンター</title>
+<title>神椿TCG tokenカウンター</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Cormorant+Garamond:wght@600;700&display=swap">
@@ -278,13 +278,13 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 @media (max-width:380px){.tstep{width:72px}.crow{gap:4px;grid-template-columns:24px minmax(0,1fr) 2.2em auto}.cic .ic{width:22px;height:22px}}
 /* LIMITED: 使用前 / 使用後 */
 .limtog{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--gold);background:linear-gradient(180deg,#3a2f17,#2a2212);color:var(--gold);border-radius:999px;padding:3px 10px 3px 4px;font-size:12px;font-weight:700;min-height:30px;flex:0 0 auto;letter-spacing:.04em}
-.limtog .ic{width:22px;height:22px}
+.limtog .ic{width:26px;height:26px}
 .limtog.used{border-color:var(--line);background:var(--bg2);color:var(--dim);font-weight:500}
 .limtog.used .ic{filter:grayscale(1);opacity:.5}
 .limtog.armed{border-color:var(--bad);color:var(--fg)}
 .player.readonly .limtog{pointer-events:none}
-.compact .limtog{min-height:26px;font-size:11px;padding:2px 8px 2px 3px}
-.compact .limtog .ic{width:18px;height:18px}
+.compact .limtog{min-height:30px;font-size:12px;padding:2px 10px 2px 3px}
+.compact .limtog .ic{width:24px;height:24px}
 .compact .limtog .lt-pre{display:none}
 .compact #ctrl{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"turn die end" "ph ph art";gap:6px;align-items:center;padding:8px}
 .compact #turnline{grid-area:turn;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -305,7 +305,8 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact .mini .mname{font-size:13px;max-width:6em}
 .compact .mini .stats{flex-wrap:nowrap;gap:8px;overflow:hidden}
 .compact .mini .st{font-size:19px}
-.mini .st.lim small{font-size:11px;color:var(--gold);font-family:var(--f-body)} .mini .st.lim.used .ic{filter:grayscale(1);opacity:.5} .mini .st.lim.used small{color:var(--dim)}
+.mini .st.lim .ic{width:22px;height:22px}
+.mini .st.lim small{font-size:12px;color:var(--gold);font-family:var(--f-body)} .mini .st.lim.used .ic{filter:grayscale(1);opacity:.5} .mini .st.lim.used small{color:var(--dim)}
 .compact .mini .chip{font-size:10px;padding:1px 6px}
 .compact .mini .chip.role,.compact .mini .swap .t{display:none}
 .compact .mini .mname{flex:0 1 auto;min-width:2.5em}
@@ -422,10 +423,16 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 /* 縦向きの「自分を大きく」（1人表示）：数字はアイコンの下、＋−は縦並びにして、丸をできるだけ大きく */
 @media (max-width:999px) and (min-height:600px){
   .view-focus.compact #panel-bottom .crows{gap:8px}
-  .view-focus.compact #panel-bottom .crow{grid-template-columns:48px minmax(0,1fr) 58px;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"ic pips step" "num pips step";column-gap:10px;row-gap:0;padding:2px 4px}
-  .view-focus.compact #panel-bottom .cic{grid-area:ic;height:auto;align-self:end}
+  .view-focus.compact #panel-bottom .crow{grid-template-columns:48px minmax(0,1fr) 58px;grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr);grid-template-areas:". pips step" "ic pips step" "num pips step" ". pips step";column-gap:10px;row-gap:0;padding:2px 4px}
+  .view-focus.compact #panel-bottom .cic{grid-area:ic;height:auto;align-self:center}
   .view-focus.compact #panel-bottom .cic .ic{width:40px;height:40px}
-  .view-focus.compact #panel-bottom .cnum{grid-area:num;text-align:center;font-size:32px;align-self:start;padding-top:2px}
+  .view-focus.compact #panel-bottom .cnum{grid-area:num;text-align:center;font-size:32px;align-self:center;padding-top:2px}
+  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cnum{color:var(--gold);font-size:40px}
+  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cic .ic{width:48px;height:48px}
+  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cpips{align-content:center}
+  .view-focus.compact #panel-bottom .limtog{min-height:38px;font-size:15px;padding:3px 12px 3px 4px;gap:6px;flex:0 0 auto}
+  .view-focus.compact #panel-bottom .pname{min-width:4.5em}
+  .view-focus.compact #panel-bottom .limtog .ic{width:32px;height:32px}
   .view-focus.compact #panel-bottom .cnum small{font-size:.5em}
   .view-focus.compact #panel-bottom .cpips{grid-area:pips;height:100%;container-type:size;gap:6px}
   .view-focus.compact #panel-bottom .cp{flex:0 0 auto;width:min(calc((100cqw - 24px) / 5), 100cqh, 64px);height:auto;max-width:none;max-height:none;aspect-ratio:1}
@@ -594,7 +601,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 <body>
 <div class="wrap view-focus" id="app">
   <header class="top">
-    <div class="brand"><h1>神椿 LIVEカウンター</h1><small>Kamitsubaki TCG</small></div>
+    <div class="brand"><h1>神椿TCG tokenカウンター</h1><small>Kamitsubaki TCG</small></div>
     <div class="topr">
       <span class="pill" id="netpill"><span class="dot"></span>オフライン</span>
       <button class="iconbtn" id="compactbtn" aria-pressed="false" title="対戦中の簡潔表示">簡潔</button>
@@ -1304,12 +1311,12 @@ function updateMini(p){
   el.innerHTML = `<span class="mname">${esc(s.name)}</span>
     <span class="chip role">${roleLabel(p)}</span>${isTurn ? '<span class="chip turn">手番</span>' : ''}${mode === 'online' && seat === p ? '<span class="chip me">あなた</span>' : ''}
     <span class="stats">
+      <span class="st lim${s.lu ? ' used' : ''}" aria-label="LIMITED ${s.lu ? '使用後' : '使用前'}">${IC.lim}<small>${s.lu ? '済' : '未'}</small></span>
       <span class="st vol" aria-label="VOL">${IC.vol}${s.vol}</span>
       <span class="st" aria-label="ノイズ">${IC.noise}${s.noise}${s.mn ? `<small>/${capOf(p,'noise')}</small>` : ''}</span>
       <span class="st a" aria-label="魔力α">${IC.a}${s.a}${s.ma ? `<small>/${capOf(p,'a')}</small>` : ''}</span>
       <span class="st b" aria-label="魔力β">${IC.b}${s.b}${s.mb ? `<small>/${capOf(p,'b')}</small>` : ''}</span>
       <span class="st o" aria-label="魔力Ω">${IC.o}${s.o}${s.mo ? `<small>/${capOf(p,'o')}</small>` : ''}</span>
-      <span class="st lim${s.lu ? ' used' : ''}" aria-label="LIMITED ${s.lu ? '使用後' : '使用前'}">${IC.lim}<small>${s.lu ? '済' : '未'}</small></span>
     </span>
     <button class="chip capbtn" data-capsheet="${p}" aria-label="${esc(s.name)}の上限を変更">上限</button>
     <span class="chip swap">⇅<span class="t"> 切替</span></span>
@@ -1969,7 +1976,7 @@ $('copylink').onclick = async () => {
   const url = inviteURL();
   try { await navigator.clipboard.writeText(url); toast('招待リンクをコピーしました'); }
   catch(e){ const r = document.createRange(); r.selectNodeContents($('linktext')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('リンクを選択しました。長押しでコピーしてください'); }
-  if (navigator.share){ try { await navigator.share({title:'神椿 LIVEカウンター', text:`対戦コード ${roomCode}`, url}); } catch(e){} }
+  if (navigator.share){ try { await navigator.share({title:'神椿TCG tokenカウンター', text:`対戦コード ${roomCode}`, url}); } catch(e){} }
 };
 
 // wake lock

@@ -1,4 +1,4 @@
-// 神椿 LIVEカウンター：電波がなくても開けるようにするキャッシュ
+// 神椿TCG tokenカウンター：電波がなくても開けるようにするキャッシュ
 const CACHE = 'kt-live-v1';
 const CORE = ['./', './index.html', './peerjs.min.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
 
