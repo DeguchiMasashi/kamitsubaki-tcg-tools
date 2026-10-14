@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="tokenカウンター">
-<meta name="description" content="神椿TCG（KAMITSUBAKI CARD GAME）のVOL・魔力・ターン進行・サイコロを管理するカウンター。ログイン不要、対戦コードでスマホ同士も同期。">
+<meta name="description" content="神椿TCG（KAMITSUBAKI CARD GAME）用の非公式ファンメイドツール。VOL・VOLノイズ・魔力・LIMITED・ターン進行・サイコロを管理。ブラウザで開くだけ・登録不要、対戦コードでスマホ同士も同期できます。">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -42,7 +42,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .wrap{max-width:1280px;margin:0 auto;padding-block:10px 40px;display:flex;flex-direction:column;gap:10px}
 
 /* top bar */
-.top{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.top{display:flex;align-items:center;gap:8px;justify-content:space-between;position:relative;z-index:9}   /* 先攻・後攻のポップアップ中でも設定・簡潔ボタンを押せるように */
 .brand{display:flex;align-items:baseline;gap:8px;min-width:0;flex:1 1 auto;overflow:hidden}
 .brand h1{font-family:var(--f-disp);font-weight:800;font-size:clamp(17px,4.6vw,22px);margin:0;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .brand small{color:var(--muted);font-size:10px;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}
@@ -161,6 +161,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .log li{display:flex;gap:8px;color:var(--muted)}
 .log li time{color:var(--dim);font-variant-numeric:tabular-nums;flex:0 0 auto}
 .log li:first-child{color:var(--fg)}
+.howto{border:1px solid var(--line);border-radius:12px;padding:4px 12px;background:var(--bg2)}
+.howto>summary{font-size:14px;color:var(--fg);letter-spacing:.05em;font-weight:700}
+.howto dl{margin:4px 0 10px;font-size:13px;line-height:1.6}
+.howto dt{font-weight:700;color:var(--gold);margin-top:8px}
+.howto dd{margin:2px 0 0;color:var(--muted)}
 details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:.1em;min-height:28px;display:flex;align-items:center}
 .mull{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 10px;align-items:center;font-size:13px}
 .more{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -624,6 +629,19 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   </header>
 
   <section class="settings" id="settings" hidden aria-label="設定・共有">
+    <details class="howto" id="howto">
+      <summary>使い方</summary>
+      <dl>
+        <dt>1台で遊ぶ</dt>
+        <dd>下の「1台で遊ぶ」を選び、端末をテーブルに置いて向かい合わせで使います。丸をタップするか −／＋ で数値を変え、手番が終わったら「ターン終了」。間違えたら「↶ 戻す」。</dd>
+        <dt>オンラインで遊ぶ</dt>
+        <dd>「オンラインで遊ぶ」→「対戦を作る」で4文字のコードが出ます。招待リンクかコードを相手に伝えてください（公開の投稿には書かず、DMなどで）。相手はリンクを開くか、コードを入力して参加します。</dd>
+        <dt>ホーム画面に追加</dt>
+        <dd>iPhone（Safari）は共有ボタン →「ホーム画面に追加」、Android（Chrome）はメニュー →「ホーム画面に追加」。アプリのように開け、一度開けば電波がなくても起動できます。</dd>
+        <dt>表示</dt>
+        <dd>「簡潔」でスクロールなしの1画面に。「自分だけ」で自分のパネルだけを大きく表示します。</dd>
+      </dl>
+    </details>
     <div class="sgroup">
       <h2 class="sh">遊び方を選ぶ</h2>
       <div class="modecards" role="radiogroup" aria-label="遊び方">
@@ -2050,7 +2068,7 @@ if (/^[A-Z0-9]{4}$/.test(qroom)){
   loadView();
   lastDie = S.game.dice ? S.game.dice.n : null;   // 再読み込みで前のサイコロを再生しない
   if (followOn() && S.game.first) bigP = S.game.active;
-  if (!store.get('kt-seen')){ $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
+  if (!store.get('kt-seen')){ $('howto').open = true; $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
   render();
   let last = null; try { last = JSON.parse(store.get('kt-last')); } catch(e){}
   if (mode === 'online' && last && last.code && Date.now() - (last.at || 0) < 12*3600*1000){
