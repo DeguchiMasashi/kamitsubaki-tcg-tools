@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Cormorant+Garamond:wght@600;700&display=swap">
 <style>
-/* Layout: プレイシートを模した盤面。「自分を大きく」= 相手は上部の要約バー / 「2人並べる」= 2人分のフルパネル（対面回転可） */
+/* Layout: プレイシートを模した盤面。「自分だけ」= 自分のパネルだけ表示 / 「2人並べる」= 2人分のフルパネル（対面回転可） */
 :root{
   color-scheme: dark;
   --bg:#0f0d1a; --bg2:#171427; --panel:#1c1830; --line:#3a3354; --line-soft:#2a2540;
@@ -75,12 +75,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 /* board */
 .board{display:grid;gap:10px;grid-template-columns:minmax(0,1fr);grid-template-areas:"mini" "top" "ctrl" "bottom" "more"}
 #mini{grid-area:mini} #panel-top{grid-area:top} #ctrl{grid-area:ctrl} #panel-bottom{grid-area:bottom} #more{grid-area:more}
-.view-focus #panel-top{display:none}
+.view-focus #panel-top,.view-focus #mini{display:none}
+.view-focus .board{grid-template-areas:"ctrl" "bottom" "more"}
 .view-equal #mini{display:none}
 .flip.view-equal #panel-top{transform:rotate(180deg)}
 @media (min-width:1000px){
   .view-equal .board{grid-template-columns:minmax(0,1fr) 340px minmax(0,1fr);grid-template-areas:"top ctrl bottom" "top more bottom";align-items:start}
-  .view-focus .board{grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"mini mini" "bottom ctrl" "bottom more";align-items:start}
+  .view-focus .board{grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"bottom ctrl" "bottom more";align-items:start}
 }
 
 /* mini (opponent summary) */
@@ -233,13 +234,15 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 #artistwrap .short{display:none}
 #reset2{display:none}
 .compact-body{overflow:hidden;overscroll-behavior:none}
+.cfoot{display:none}
+.compact .cfoot{display:block;flex:0 0 auto;margin:-2px 0 0;text-align:center;font-size:10px;line-height:1.2;color:var(--dim);letter-spacing:.04em}
 .wrap.compact{height:100vh;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding-block:8px;gap:8px;overflow:hidden}
 .compact .board{flex:1 1 auto;min-height:0;gap:8px;grid-template-rows:auto auto auto minmax(0,1fr) auto}
 .view-equal.compact .board{grid-template-areas:"top" "ctrl" "more" "bottom";grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr)}
-.view-focus.compact .board{grid-template-areas:"mini" "ctrl" "more" "bottom";grid-template-rows:auto auto auto minmax(0,1fr)}
+.view-focus.compact .board{grid-template-areas:"ctrl" "more" "bottom";grid-template-rows:auto auto minmax(0,1fr)}
 @media (min-width:1000px){
   .view-equal.compact .board{grid-template-columns:minmax(0,1fr) 340px minmax(0,1fr);grid-template-areas:"top ctrl bottom" "top more bottom";grid-template-rows:auto minmax(0,1fr)}
-  .view-focus.compact .board{grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"mini mini" "bottom ctrl" "bottom more";grid-template-rows:auto auto minmax(0,1fr)}
+  .view-focus.compact .board{grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"bottom ctrl" "bottom more";grid-template-rows:auto minmax(0,1fr)}
 }
 .compact .player{display:flex;flex-direction:column;gap:6px;padding:8px;min-height:0;overflow:hidden;align-self:stretch}
 .compact .player>.sec{display:none!important}
@@ -252,6 +255,9 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .crow.capmode{box-shadow:inset 0 0 0 1.5px var(--warn);background:rgba(242,166,90,.06)}
 .cic{border:0;background:transparent;padding:0;display:grid;place-items:center;height:100%}
 .cic .ic{width:26px;height:26px}
+/* VOLノイズはアイコンの代わりに項目名を表示 */
+.crow[data-tk="noise"] .cic .ic{display:none}
+.cic-t{display:block;font-family:var(--f-body);font-size:9.5px;line-height:1.1;font-weight:700;color:var(--fg);text-align:center;letter-spacing:-.03em;white-space:nowrap;border:1px solid var(--noise);border-radius:4px;padding:2px 1px;background:#2c2942}
 .cpips{display:flex;gap:3px;align-items:center;min-width:0;height:100%}
 .cp{flex:1 1 0;min-width:0;max-width:32px;max-height:100%;aspect-ratio:1;padding:0;border-radius:50%;background:transparent;display:grid;place-items:center;font-family:var(--f-num);font-size:10px;color:var(--dim);line-height:1}
 .cp-vol{border:1.5px solid var(--gold-soft)}
@@ -275,7 +281,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .crow.capmode .cp{pointer-events:none}
 .player.readonly .tstep:not(.tcap){visibility:hidden}
 .player.readonly .cp{pointer-events:none}
-@media (max-width:380px){.tstep{width:72px}.crow{gap:4px;grid-template-columns:24px minmax(0,1fr) 2.2em auto}.cic .ic{width:22px;height:22px}}
+@media (max-width:380px){.tstep{width:72px}.crow{gap:4px;grid-template-columns:30px minmax(0,1fr) 2.2em auto}.cic .ic{width:22px;height:22px}.cic-t{font-size:8px;padding:1px 0}}
 /* LIMITED: 使用前 / 使用後 */
 .limtog{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--gold);background:linear-gradient(180deg,#3a2f17,#2a2212);color:var(--gold);border-radius:999px;padding:3px 10px 3px 4px;font-size:12px;font-weight:700;min-height:30px;flex:0 0 auto;letter-spacing:.04em}
 .limtog .ic{width:26px;height:26px}
@@ -306,6 +312,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .compact .mini .stats{flex-wrap:nowrap;gap:8px;overflow:hidden}
 .compact .mini .st{font-size:19px}
 .mini .st.lim .ic{width:22px;height:22px}
+.swapchip{border:1px solid var(--line);background:var(--panel);color:var(--fg);font-size:14px;padding:2px 9px;cursor:pointer}
 .mini .st.lim small{font-size:12px;color:var(--gold);font-family:var(--f-body)} .mini .st.lim.used .ic{filter:grayscale(1);opacity:.5} .mini .st.lim.used small{color:var(--dim)}
 .compact .mini .chip{font-size:10px;padding:1px 6px}
 .compact .mini .chip.role,.compact .mini .swap .t{display:none}
@@ -420,12 +427,13 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .compact .crow[data-tk="vol"] .cpips{display:grid;grid-template-columns:repeat(5,auto);grid-template-rows:repeat(2,auto);justify-content:start;align-content:center;gap:4px;height:100%;container-type:size}
   .compact .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 16px) / 5), calc((100cqh - 4px) / 2), 46px);height:auto;max-width:none;max-height:none;aspect-ratio:1;font-size:13px;font-weight:700}
 }
-/* 縦向きの「自分を大きく」（1人表示）：数字はアイコンの下、＋−は縦並びにして、丸をできるだけ大きく */
+/* 縦向きの「自分だけ」（1人表示）：数字はアイコンの下、＋−は縦並びにして、丸をできるだけ大きく */
 @media (max-width:999px) and (min-height:600px){
   .view-focus.compact #panel-bottom .crows{gap:8px}
   .view-focus.compact #panel-bottom .crow{grid-template-columns:48px minmax(0,1fr) 58px;grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr);grid-template-areas:". pips step" "ic pips step" "num pips step" ". pips step";column-gap:10px;row-gap:0;padding:2px 4px}
   .view-focus.compact #panel-bottom .cic{grid-area:ic;height:auto;align-self:center}
   .view-focus.compact #panel-bottom .cic .ic{width:40px;height:40px}
+  .view-focus.compact #panel-bottom .cic-t{font-size:12px;padding:4px 2px}
   .view-focus.compact #panel-bottom .cnum{grid-area:num;text-align:center;font-size:32px;align-self:center;padding-top:2px}
   .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cnum{color:var(--gold);font-size:40px}
   .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cic .ic{width:48px;height:48px}
@@ -558,6 +566,10 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .dstage.centered .dres{font-size:15px;padding:10px 18px}
 .dstage.centered .dres b{font-size:36px}
 .dstage.picking .dveil,.dstage.centered .dveil{background:rgba(8,6,16,.62);transition:background .3s}
+/* 狭いスマホの簡潔表示：名前が隠れないようLIMITEDボタンを少し小さく */
+.compact .pname{min-width:4.5em}
+@media (max-width:380px){.compact .phead .chip.turn .tn{display:none}}
+@media (max-width:380px){.compact .limtog{font-size:11px;padding:2px 8px 2px 3px;min-height:26px}.compact .limtog .ic{width:20px;height:20px}.compact .phead .chip{font-size:10px;padding:1px 6px}}
 /* 複数のサイコロ */
 .diewrap{position:relative;display:inline-grid;flex:0 0 auto}
 .compact .diewrap{grid-area:die;align-self:center}
@@ -669,11 +681,11 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
     <div class="sgroup">
       <h2 class="sh">表示</h2>
       <div class="srow"><span class="slabel">レイアウト</span>
-        <div class="seg" role="group" aria-label="レイアウト"><button id="v-equal" aria-pressed="false">2人並べる</button><button id="v-focus" aria-pressed="true">自分を大きく</button></div>
+        <div class="seg" role="group" aria-label="レイアウト"><button id="v-equal" aria-pressed="false">2人並べる</button><button id="v-focus" aria-pressed="true">自分だけ</button></div>
       </div>
       <div id="offopts" class="optlist">
         <label class="check"><input type="checkbox" id="flip" checked> <span>対面表示（相手側を180°回転）<small class="note" id="flipnote" hidden>「2人並べる」のときに使えます</small></span></label>
-        <label class="check"><input type="checkbox" id="follow" checked> <span>手番のプレイヤーを自動で大きく<small class="note" id="follownote" hidden>「自分を大きく」のときに使えます</small></span></label>
+        <label class="check"><input type="checkbox" id="follow" checked> <span>手番のプレイヤーに自動で切り替える<small class="note" id="follownote" hidden>「自分だけ」のときに使えます</small></span></label>
       </div>
       <div class="optlist">
         <label class="check" id="wakewrap"><input type="checkbox" id="wake"> 画面を消さない</label>
@@ -723,6 +735,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
       <p class="foot">ルールは <a href="https://tcg.kamitsubaki.jp/" target="_blank" rel="noopener">公式サイト</a> を参照。非公式のファンメイドツールです。</p>
     </div>
   </main>
+  <p class="cfoot">非公式のファンメイドツールです（公式とは関係ありません）</p>
 </div>
 <div class="sheet center" id="fpsheet" hidden role="dialog" aria-label="先攻・後攻を決める">
   <div class="sheet-in">
@@ -1197,6 +1210,7 @@ function buildPanel(el){
       <span class="chip me" data-f="me" hidden>あなた</span>
       <span class="chip ro" data-f="ro" hidden>閲覧のみ</span>
       <span class="chip turn" data-f="turnchip" hidden>手番</span>
+      <button class="chip swapchip" data-swap="1" data-f="swap" hidden aria-label="表示するプレイヤーを切り替え">⇅</button>
       <button class="limtog" data-limtog="1" data-f="limtog">${IC.lim}<span class="lt-pre">LIMITED </span><span data-f="limst">使用前</span></button>
     </div>
     <div class="sec" data-sec="vol">
@@ -1249,7 +1263,7 @@ function buildPanel(el){
     <div class="crows">
       ${[['vol','VOL',10],['noise','VOLノイズ',5],['a','魔力α',5],['b','魔力β',5],['o','魔力Ω',5]].map(([k,g,n])=>`
       <div class="crow c-${k}" data-tk="${k}">
-        ${k === 'vol' ? `<span class="cic">${IC.vol}</span>` : `<button class="cic" data-capt="${k}" aria-label="${g}（タップで上限を変更）">${IC[k]}</button>`}
+        ${k === 'vol' ? `<span class="cic">${IC.vol}</span>` : `<button class="cic" data-capt="${k}" aria-label="${g}（タップで上限を変更）">${IC[k]}${k === 'noise' ? '<span class="cic-t">VOL<br>ノイズ</span>' : ''}</button>`}
         <div class="cpips">${Array.from({length:n},(_,i)=>`<button class="cp ${k==='vol'?'cp-vol':k==='noise'?'cp-noise':'cp-tk'}" data-act="set" data-k="${k}" data-v="${i+1}" aria-label="${g} ${i+1}">${k==='vol'?i+1:''}</button>`).join('')}</div>
         <span class="cnum" data-f="t-${k}">0</span>
         <span class="tstep"><button data-act="adj" data-k="${k}" data-d="-1" aria-label="${g} -1">−</button><button data-act="adj" data-k="${k}" data-d="1" aria-label="${g} +1">＋</button></span>
@@ -1268,9 +1282,10 @@ function updatePanel(el, p){
   q('ro').hidden = !ro;
   q('role').textContent = roleLabel(p);
   q('me').hidden = !(mode === 'online' && seat === p);
+  q('swap').hidden = !(viewMode === 'focus' && (mode === 'offline' || seat === 'watch'));   // 自分だけ表示で、1台のときはプレイヤーを切り替えられる
   const isTurn = !!(g.first && g.active === p);
   q('turnchip').hidden = !isTurn; el.classList.toggle('turn', isTurn);
-  q('turnchip').textContent = `手番・${Math.ceil((g.turn || 1) / 2)}ターン目`;
+  q('turnchip').innerHTML = `手番<span class="tn">・${Math.ceil((g.turn || 1) / 2)}ターン目</span>`;
   const capTxt = k => (s[MOD[k]] || 0) ? `<small>/${capOf(p,k)}</small>` : '';
   q('voln').textContent = s.vol; q('noisen').innerHTML = s.noise + capTxt('noise');
   el.querySelectorAll('.vp').forEach((b,i) => b.classList.toggle('on', i < s.vol));
@@ -1901,6 +1916,7 @@ document.addEventListener('click', e => {
     if (!canCap()){ toast('観戦中は操作できません'); return; }
     $('capsheet').dataset.p = b.dataset.capsheet; $('capsheet').hidden = false; render(); return;
   }
+  if (b.dataset.swap){ swapBig(); return; }
   if (b.dataset.winclose){ winHidden.add(b.closest('.player').dataset.p); render(); return; }
   if (b.dataset.winundo){ const p = b.closest('.player').dataset.p; if (canEdit(p)) adjust(p, 'vol', -1); return; }
   if (b.dataset.phase) return setPhase(b.dataset.phase);
