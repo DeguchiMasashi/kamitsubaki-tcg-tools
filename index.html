@@ -49,7 +49,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .brand{align-items:center}
 .unof{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 5px;letter-spacing:.05em;line-height:1.4}
 .topr{display:flex;gap:6px;align-items:center;flex:0 0 auto}
-.pill{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);white-space:nowrap;background:var(--bg2)}
+.pill{font-size:11.5px;border:0;border-radius:999px;padding:3px 4px;color:var(--muted);white-space:nowrap;background:transparent}
+@media (max-width:380px){.pill{font-size:10.5px;padding:3px 0;max-width:6.5em;overflow:hidden;text-overflow:ellipsis}.brand h1{min-width:3.6em}}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dim);margin-right:5px;vertical-align:middle}
 .dot.on{background:var(--ok)} .dot.wait{background:var(--warn)} .dot.bad{background:var(--bad)}
 .iconbtn{border:1px solid var(--line);background:var(--bg2);border-radius:10px;height:36px;min-width:36px;padding:0 10px;font-size:13px}
@@ -121,13 +122,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .step.big button{width:64px;height:48px;font-size:22px}
 .step .txt{width:auto;padding:0 12px;font-size:14px}
 .noise{display:flex;gap:5px}
-.np{width:24px;height:34px;border-radius:4px;border:1px solid var(--line);background:transparent;padding:0}
+.np{width:24px;height:34px;border-radius:4px;border:1px solid #5d5679;background:transparent;padding:0}
 .np.on{background:repeating-linear-gradient(135deg,#3b3752 0 4px,#2c2942 4px 8px);border-color:var(--noise)}
 .mana{display:grid;gap:8px;margin-top:6px}
 .mrow{display:grid;grid-template-columns:1.6em minmax(0,1fr) 1.4em auto;align-items:center;gap:8px}
 .mname{font-family:var(--f-num);font-weight:700;font-size:26px;line-height:1;text-align:center}
 .tokens{display:flex;gap:5px;min-width:0}
-.tk{width:28px;height:28px;flex:0 1 28px;min-width:16px;aspect-ratio:1;border-radius:50%;border:1.5px solid var(--c);opacity:.4;background:transparent;padding:0}
+.tk{width:28px;height:28px;flex:0 1 28px;min-width:16px;aspect-ratio:1;border-radius:50%;border:1.5px solid var(--c);opacity:.65;background:transparent;padding:0}
 .tk.on{opacity:1;background:radial-gradient(circle at 35% 30%,#fff8,var(--c) 60%);box-shadow:0 0 10px -2px var(--c)}
 .mcount{font-family:var(--f-num);font-size:28px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;line-height:1}
 .mcount.full{color:var(--warn)}
@@ -269,9 +270,10 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .cp{flex:1 1 0;min-width:0;max-width:32px;max-height:100%;aspect-ratio:1;padding:0;border-radius:50%;background:transparent;display:grid;place-items:center;font-family:var(--f-num);font-size:10px;color:var(--dim);line-height:1}
 .cp-vol{border:1.5px solid var(--gold-soft)}
 .cp-vol.on{background:radial-gradient(circle at 35% 30%,#f7e3a8,var(--gold) 55%,#8a6a2a);border-color:var(--gold);color:#3a2a0a;font-weight:700}
-.cp-tk{border:1.5px solid var(--c);opacity:.4}
+.cp-tk{border:1.5px solid var(--c);opacity:.65}
+.c-o .cp-tk:not(.on),.c-o .tk:not(.on){border-color:var(--omega-t)}
 .cp-tk.on{opacity:1;background:radial-gradient(circle at 35% 30%,#fff8,var(--c) 60%);box-shadow:0 0 8px -2px var(--c)}
-.cp-noise{aspect-ratio:3/4;border-radius:3px;border:1px solid var(--line);flex:0 0 auto;height:calc(100% - 4px);max-height:32px;width:auto;max-width:none}
+.cp-noise{aspect-ratio:3/4;border-radius:3px;border:1px solid #5d5679;flex:0 0 auto;height:calc(100% - 4px);max-height:32px;width:auto;max-width:none}
 .cp-noise.on{background:repeating-linear-gradient(135deg,#3b3752 0 4px,#2c2942 4px 8px);border-color:var(--noise)}
 .cp.sealed{opacity:.3;border-style:dashed;pointer-events:none}
 .cnum{font-family:var(--f-num);font-size:22px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
@@ -575,7 +577,8 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .dstage.picking .dveil,.dstage.centered .dveil{background:rgba(8,6,16,.62);transition:background .3s}
 /* 狭いスマホの簡潔表示：名前が隠れないようLIMITEDボタンを少し小さく */
 .compact .pname{min-width:4.5em}
-@media (max-width:380px){.compact .phead .chip.turn .tn{display:none}}
+.compact .phead .chip.turn .tn{display:none}
+.compact .pname{min-width:5.5em}
 @media (max-width:380px){.compact .limtog{font-size:11px;padding:2px 8px 2px 3px;min-height:26px}.compact .limtog .ic{width:20px;height:20px}.compact .phead .chip{font-size:10px;padding:1px 6px}}
 /* 複数のサイコロ */
 .diewrap{position:relative;display:inline-grid;flex:0 0 auto}
@@ -623,7 +626,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
     <div class="brand"><span class="unof" title="非公式のファンメイドツール">非公式</span><h1>神椿TCG tokenカウンター</h1><small>Unofficial fan tool</small></div>
     <div class="topr">
       <span class="pill" id="netpill"><span class="dot"></span>オフライン</span>
-      <button class="iconbtn" id="compactbtn" aria-pressed="false" title="対戦中の簡潔表示">簡潔</button>
+      <button class="iconbtn" id="compactbtn" title="表示を切り替え">詳細</button>
       <button class="iconbtn" id="setbtn" aria-expanded="false" aria-controls="settings">設定・共有</button>
     </div>
   </header>
@@ -639,7 +642,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
         <dt>ホーム画面に追加</dt>
         <dd>iPhone（Safari）は共有ボタン →「ホーム画面に追加」、Android（Chrome）はメニュー →「ホーム画面に追加」。アプリのように開け、一度開けば電波がなくても起動できます。</dd>
         <dt>表示</dt>
-        <dd>「簡潔」でスクロールなしの1画面に。「自分だけ」で自分のパネルだけを大きく表示します。</dd>
+        <dd>最初はスクロールなしの簡潔表示です。上の「詳細」でフェーズのヒントやログも見られる表示に、「簡潔」で戻ります。設定の「自分だけ」で自分のパネルだけを大きく表示します。</dd>
       </dl>
     </details>
     <div class="sgroup">
@@ -736,7 +739,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
         <button class="btn" id="undo" aria-label="直前の操作を戻す">↶ 戻す</button>
         <button class="btn danger" id="reset2" data-label="リセット" data-armed="もう一度で実行">リセット</button>
         <button class="btn" id="setbtn2">設定</button>
-        <button class="btn" id="compactbtn2">簡潔</button>
+        <button class="btn" id="compactbtn2">詳細</button>
       </div>
     </section>
     <section class="player" id="panel-bottom"></section>
@@ -870,7 +873,7 @@ let bigP = 'p1';
 let viewMode = 'equal';
 const viewKey = () => mode === 'online' ? 'kt-view-on' : 'kt-view-off';
 function loadView(){ viewMode = store.get(viewKey()) || (mode === 'online' ? 'focus' : 'equal'); }
-let compact = store.get('kt-compact') === '1';
+let compact = store.get('kt-compact') === null ? true : store.get('kt-compact') === '1';   // 初めての人は簡潔表示から
 let collapsed = (() => { try { const v = JSON.parse(store.get('kt-collapsed')); if (Array.isArray(v)) return new Set(v); } catch(e){} return new Set(['setup']); })();
 if (store.get('kt-cv') !== '2'){ collapsed.add('cap'); store.set('kt-cv', '2'); store.set('kt-collapsed', JSON.stringify([...collapsed])); }
 
@@ -1332,7 +1335,7 @@ function updatePanel(el, p){
     row.classList.toggle('capmode', cm);
     row.querySelectorAll('.cp').forEach((b,i) => { b.classList.toggle('on', i < s[k]); b.classList.toggle('sealed', k !== 'vol' && i >= cap); });
     const n = q('t-' + k);
-    n.innerHTML = cm ? `<span class="capl">上限</span>${cap}` : s[k] + (k !== 'vol' && s[MOD[k]] ? `<small>/${cap}</small>` : '');
+    n.innerHTML = cm ? `<span class="capl">上限</span>${cap}` : s[k] + (k === 'vol' ? '<small>/10</small>' : s[MOD[k]] ? `<small>/${cap}</small>` : '');
     n.classList.toggle('full', !cm && k !== 'vol' && s[k] >= cap);
   }
   if (s.vol < 10) winHidden.delete(p);
@@ -1788,7 +1791,7 @@ function render(){
   app.classList.toggle('swipe-on', $('swipe').checked);
   app.classList.toggle('ctrl-flip', mode === 'offline' && viewMode === 'equal' && flipOn() && !!S.game.first && S.game.active === other(bigP));
   document.body.classList.toggle('compact-body', compact);
-  $('compactbtn').setAttribute('aria-pressed', String(compact));
+  $('compactbtn').textContent = compact ? '詳細' : '簡潔'; $('compactbtn').title = compact ? 'ヒントやログも見られる詳細表示に切り替え' : 'スクロールなしの簡潔表示に切り替え';
   document.querySelectorAll('.sec').forEach(s => {
     const c = collapsed.has(s.dataset.sec); s.classList.toggle('closed', c);
     const h = s.querySelector(':scope > .sec-head'); if (h) h.setAttribute('aria-expanded', String(!c));
@@ -1815,7 +1818,7 @@ function render(){
   const oppTurn = !!g.first && mode === 'online' && seat !== g.active;
   $('endturn').disabled = oppTurn;
   $('undo').hidden = mode === 'online'; $('undo').disabled = !hist.length;
-  $('compactbtn2').setAttribute('aria-pressed', String(compact));
+  $('compactbtn2').textContent = compact ? '詳細' : '簡潔';
   setBtnLabel($('endturn'), !g.first ? '先攻・後攻' : oppTurn ? '相手の手番' : 'ターン終了');
 
   const d = g.dice, die = $('die');
