@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>神椿TCG tokenカウンター</title>
+<title>神椿TCG tokenカウンター（非公式）</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Cormorant+Garamond:wght@600;700&display=swap">
@@ -46,6 +46,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .brand{display:flex;align-items:baseline;gap:8px;min-width:0;flex:1 1 auto;overflow:hidden}
 .brand h1{font-family:var(--f-disp);font-weight:800;font-size:clamp(17px,4.6vw,22px);margin:0;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .brand small{color:var(--muted);font-size:10px;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}
+.brand{align-items:center}
+.unof{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 5px;letter-spacing:.05em;line-height:1.4}
 .topr{display:flex;gap:6px;align-items:center;flex:0 0 auto}
 .pill{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);white-space:nowrap;background:var(--bg2)}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--dim);margin-right:5px;vertical-align:middle}
@@ -613,7 +615,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 <body>
 <div class="wrap view-focus" id="app">
   <header class="top">
-    <div class="brand"><h1>神椿TCG tokenカウンター</h1><small>Kamitsubaki TCG</small></div>
+    <div class="brand"><span class="unof" title="非公式のファンメイドツール">非公式</span><h1>神椿TCG tokenカウンター</h1><small>Unofficial fan tool</small></div>
     <div class="topr">
       <span class="pill" id="netpill"><span class="dot"></span>オフライン</span>
       <button class="iconbtn" id="compactbtn" aria-pressed="false" title="対戦中の簡潔表示">簡潔</button>
@@ -692,6 +694,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
         <label class="check"><input type="checkbox" id="swipe"> <span>サイコロを画面に出してスワイプで投げる<small class="note">サイコロのボタンを押すと画面にサイコロが出ます。指ではじいた方向に転がります</small></span></label>
       </div>
     </div>
+    <p class="note setfoot">非公式のファンメイドツールです（公式とは関係ありません）。公式様へのお問い合わせはお控えください。ルールの判断は公式ルールに従ってください。公式から指摘があった場合は、名称の変更や公開の停止などすぐに対応します。</p>
     <button class="btn" id="setclose">閉じる</button>
   </section>
 
@@ -732,7 +735,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
           <button class="btn danger" id="reset" data-label="対戦をリセット" data-armed="もう一度押すとリセット">対戦をリセット</button>
         </div>
       </div>
-      <p class="foot">ルールは <a href="https://tcg.kamitsubaki.jp/" target="_blank" rel="noopener">公式サイト</a> を参照。非公式のファンメイドツールです。</p>
+      <p class="foot">非公式のファンメイドツールです（公式とは関係ありません）。ルールの判断は <a href="https://tcg.kamitsubaki.jp/" target="_blank" rel="noopener">公式サイト</a> のルールに従ってください。<br>公式から指摘があった場合は、名称の変更や公開の停止などすぐに対応します。</p>
     </div>
   </main>
   <p class="cfoot">非公式のファンメイドツールです（公式とは関係ありません）</p>
@@ -1992,7 +1995,7 @@ $('copylink').onclick = async () => {
   const url = inviteURL();
   try { await navigator.clipboard.writeText(url); toast('招待リンクをコピーしました'); }
   catch(e){ const r = document.createRange(); r.selectNodeContents($('linktext')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('リンクを選択しました。長押しでコピーしてください'); }
-  if (navigator.share){ try { await navigator.share({title:'神椿TCG tokenカウンター', text:`対戦コード ${roomCode}`, url}); } catch(e){} }
+  if (navigator.share){ try { await navigator.share({title:'神椿TCG tokenカウンター（非公式）', text:`対戦コード ${roomCode}`, url}); } catch(e){} }
 };
 
 // wake lock

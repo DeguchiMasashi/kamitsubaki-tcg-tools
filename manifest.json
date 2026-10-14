@@ -1,5 +1,5 @@
 {
-  "name": "神椿TCG tokenカウンター",
+  "name": "神椿TCG tokenカウンター（非公式）",
   "short_name": "tokenカウンター",
   "description": "神椿TCGのVOL・魔力・ターン進行・サイコロを管理するカウンター",
   "start_url": "./",
