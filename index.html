@@ -436,6 +436,12 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .compact .crow[data-tk="vol"] .cpips{display:grid;grid-template-columns:repeat(5,auto);grid-template-rows:repeat(2,auto);justify-content:start;align-content:center;gap:4px;height:100%;container-type:size}
   .compact .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 16px) / 5), calc((100cqh - 4px) / 2), 46px);height:auto;max-width:none;max-height:none;aspect-ratio:1;font-size:13px;font-weight:700}
 }
+/* VOLノイズを1行にたたむ（全レイアウト共通の基本形） */
+.compact .crow[data-tk="noise"] .cic-t::after{content:'▴';display:block;font-size:8px;line-height:1;color:var(--muted)}
+.nz-mini .compact .crow[data-tk="noise"] .cic-t::after{content:'▾'}
+.nz-mini .compact .crow[data-tk="noise"] .cpips{display:none}
+.nz-mini .compact .crow[data-tk="noise"] .cnum{grid-column:3}
+.nz-mini .compact .crow[data-tk="noise"] .tstep{grid-column:4}
 /* VOLノイズを1行にたたむ（縦向きの簡潔表示） */
 @media (max-width:999px) and (min-height:541px){
   .nz-mini .compact .crows{grid-template-rows:minmax(0,2fr) auto repeat(3,minmax(0,1fr))}
@@ -449,8 +455,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .nz-mini .view-equal.compact .crow[data-tk="noise"] .cic-t{padding:1px 5px}
   .nz-mini .compact .crow[data-tk="noise"] .cic-t{display:inline-block;padding:2px 6px}
   .nz-mini .compact .crow[data-tk="noise"] .cic-t br{display:none}
-  .compact .crow[data-tk="noise"] .cic-t::after{content:' ▴';font-size:.85em;color:var(--muted)}
-  .nz-mini .compact .crow[data-tk="noise"] .cic-t::after{content:' ▾'}
+  .nz-mini .compact .crow[data-tk="noise"] .cic-t::after{display:inline;content:' ▾';font-size:.85em}
   .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"]{grid-template-columns:auto auto minmax(0,1fr) 112px;grid-template-rows:auto;grid-template-areas:"ic num . step";column-gap:12px}
   .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cnum{grid-area:num;font-size:26px;padding-top:0}
   .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cic-t{font-size:13px;padding:5px 8px}
@@ -734,7 +739,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
       </div>
       <div class="optlist">
         <label class="check" id="wakewrap"><input type="checkbox" id="wake"> 画面を消さない</label>
-        <label class="check"><input type="checkbox" id="nzmini" checked> <span>VOLノイズを1行に小さく表示<small class="note">縦向きの簡潔表示で、ほかの項目を大きくします。「VOLノイズ」の文字をタップしても開閉できます</small></span></label>
+        <label class="check"><input type="checkbox" id="nzmini" checked> <span>VOLノイズを1行に小さく表示<small class="note">ほかの項目を大きく見やすくします。「VOLノイズ」の文字をタップしても開閉できます</small></span></label>
         <label class="check"><input type="checkbox" id="swipe"> <span>サイコロを画面に出してスワイプで投げる<small class="note">サイコロのボタンを押すと画面にサイコロが出ます。指ではじいた方向に転がります</small></span></label>
       </div>
     </div>
@@ -898,7 +903,6 @@ const viewKey = () => mode === 'online' ? 'kt-view-on' : 'kt-view-off';
 function loadView(){ viewMode = store.get(viewKey()) || (mode === 'online' ? 'focus' : 'equal'); }
 // VOLノイズは使う頻度が低いので、縦向きの簡潔表示では1行に小さくたたむ（初期設定）
 let noiseMini = store.get('kt-nzmini') !== '0';
-const portraitCompact = matchMedia('(max-width:999px) and (min-height:541px)');
 function setNoiseMini(v){ noiseMini = v; store.set('kt-nzmini', v ? '1' : '0'); render(); }
 let compact = store.get('kt-compact') === null ? true : store.get('kt-compact') === '1';   // 初めての人は簡潔表示から
 let collapsed = (() => { try { const v = JSON.parse(store.get('kt-collapsed')); if (Array.isArray(v)) return new Set(v); } catch(e){} return new Set(['setup']); })();
@@ -1821,7 +1825,7 @@ function render(){
   document.body.classList.toggle('nz-mini', noiseMini); $('nzmini').checked = noiseMini;
   $('compactbtn').textContent = compact ? '詳細' : '簡潔'; $('compactbtn').title = compact ? 'ヒントやログも見られる詳細表示に切り替え' : 'スクロールなしの簡潔表示に切り替え';
   document.querySelectorAll('.sec').forEach(s => {
-    const c = collapsed.has(s.dataset.sec); s.classList.toggle('closed', c);
+    const c = collapsed.has(s.dataset.sec) || (s.dataset.sec === 'noise' && noiseMini); s.classList.toggle('closed', c);
     const h = s.querySelector(':scope > .sec-head'); if (h) h.setAttribute('aria-expanded', String(!c));
   });
   $('v-focus').setAttribute('aria-pressed', String(viewMode === 'focus'));
@@ -1939,6 +1943,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.classList.contains('sec-head')){
     const key = b.closest('.sec').dataset.sec;
+    if (key === 'noise'){ collapsed.delete('noise'); setNoiseMini(!noiseMini); return; }
     if (collapsed.has(key)) collapsed.delete(key); else collapsed.add(key);
     store.set('kt-collapsed', JSON.stringify([...collapsed])); render(); return;
   }
@@ -1949,7 +1954,7 @@ document.addEventListener('click', e => {
     if (b.dataset.act === 'adj') adjust(p, b.dataset.k, +b.dataset.d); else setVal(p, b.dataset.k, +b.dataset.v);
     return;
   }
-  if (b.dataset.capt === 'noise' && compact && portraitCompact.matches && !capMode.has(b.closest('.player').dataset.p + ':noise')){ setNoiseMini(!noiseMini); return; }
+  if (b.dataset.capt === 'noise' && compact && !capMode.has(b.closest('.player').dataset.p + ':noise')){ setNoiseMini(!noiseMini); return; }
   if (b.dataset.capt){
     if (!canCap()){ toast('観戦中は操作できません'); return; }
     const key = b.closest('.player').dataset.p + ':' + b.dataset.capt;
