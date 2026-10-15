@@ -21,7 +21,7 @@
 :root{
   color-scheme: dark;
   --bg:#0f0d1a; --bg2:#171427; --panel:#1c1830; --line:#3a3354; --line-soft:#2a2540;
-  --fg:#ece6f5; --muted:#a59cba; --dim:#6f6788;
+  --fg:#ece6f5; --muted:#a59cba; --dim:#8d85a6;
   --gold:#d6b46a; --gold-soft:#5a4a2a; --ink:#1a1408;
   --alpha:#e59a9f; --beta:#93c7dc; --omega:#786b97; --omega-t:#a99bd0; --noise:#8d8aa0;
   --ok:#6fcf97; --warn:#f2a65a; --bad:#e2667a;
@@ -171,10 +171,10 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .mull{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 10px;align-items:center;font-size:13px}
 .more{display:flex;flex-direction:column;gap:10px;min-width:0}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2b2342;border:1px solid var(--warn);color:var(--fg);padding:9px 14px;border-radius:10px;font-size:13px;z-index:10;width:max-content;max-width:calc(100% - 32px)}
-.foot{font-size:11px;color:var(--dim);text-align:center}
+.foot{font-size:12px;color:var(--muted);text-align:center}
 .foot a{color:var(--muted)}
 /* collapsible sections */
-.sec-head{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;padding:0;text-align:left;color:var(--muted);font-size:11px;letter-spacing:.15em;min-height:32px}
+.sec-head{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;padding:0;text-align:left;color:var(--muted);font-size:12px;letter-spacing:.12em;min-height:32px}
 .sec-head .lbl{flex:1 1 auto;min-width:0}
 .sec-head .sum{font-family:var(--f-num);font-size:32px;line-height:1;color:var(--fg);letter-spacing:0;font-variant-numeric:tabular-nums;font-weight:700}
 .sec-head .sum small{font-size:15px;color:var(--dim)}
@@ -243,7 +243,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 #reset2{display:none}
 .compact-body{overflow:hidden;overscroll-behavior:none}
 .cfoot{display:none}
-.compact .cfoot{display:block;flex:0 0 auto;margin:-2px 0 0;text-align:center;font-size:10px;line-height:1.2;color:var(--dim);letter-spacing:.04em}
+.compact .cfoot{display:block;flex:0 0 auto;margin:-2px 0 0;text-align:center;font-size:11px;line-height:1.2;color:var(--dim);letter-spacing:.04em}
 .wrap.compact{height:100vh;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));padding-block:8px;gap:8px;overflow:hidden}
 .compact .board{flex:1 1 auto;min-height:0;gap:8px;grid-template-rows:auto auto auto minmax(0,1fr) auto}
 .view-equal.compact .board{grid-template-areas:"top" "ctrl" "more" "bottom";grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr)}
@@ -450,18 +450,17 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .nz-mini .compact .crow[data-tk="noise"]{grid-template-columns:auto auto minmax(0,1fr) auto;padding-block:2px}
   .nz-mini .compact .crow[data-tk="noise"] .cnum{grid-column:2;text-align:left;font-size:20px}
   .nz-mini .compact .crow[data-tk="noise"] .tstep{grid-column:4;height:32px;min-height:32px}
-  .nz-mini .view-equal.compact .crow[data-tk="noise"] .tstep{height:24px;min-height:24px}
+  .nz-mini .view-equal.compact .crow[data-tk="noise"] .tstep{height:30px;min-height:30px}
   .nz-mini .view-equal.compact .crow[data-tk="noise"] .cnum{font-size:16px}
   .nz-mini .view-equal.compact .crow[data-tk="noise"] .cic-t{padding:1px 5px}
   .nz-mini .compact .crow[data-tk="noise"] .cic-t{display:inline-block;padding:2px 6px}
   .nz-mini .compact .crow[data-tk="noise"] .cic-t br{display:none}
   .nz-mini .compact .crow[data-tk="noise"] .cic-t::after{display:inline;content:' ▾';font-size:.85em}
-  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"]{grid-template-columns:auto auto minmax(0,1fr) 112px;grid-template-rows:auto;grid-template-areas:"ic num . step";column-gap:12px}
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"]{grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-rows:auto;grid-template-areas:"ic num . step";column-gap:12px}
   .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cnum{grid-area:num;font-size:26px;padding-top:0}
   .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cic-t{font-size:13px;padding:5px 8px}
-  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .tstep{grid-area:step;grid-template-columns:1fr 1fr;grid-template-rows:none;width:112px;height:40px;min-height:40px}
-  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .tstep button:first-child{order:0}
-  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .tstep button+button{border-bottom:0;border-left:1px solid var(--line)}
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .tstep{grid-area:step;height:64px;min-height:64px}   /* ほかの行と同じく＋が上の縦並び */
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .tstep button{font-size:22px}
 }
 /* 縦向きの「自分だけ」（1人表示）：数字はアイコンの下、＋−は縦並びにして、丸をできるだけ大きく */
 @media (max-width:999px) and (min-height:600px){
@@ -645,27 +644,47 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
 .dstage.landed .dmover.dlose{opacity:.55;transition:opacity .3s}
 .dstage.centered .dres-main{top:calc(var(--by,50%) + var(--ds) * var(--sc,1.5) * .7)}
 .dstage.centered .dres-flip{bottom:calc(100% - var(--by,50%) + var(--ds) * var(--sc,1.5) * .7)}
+/* 2026-10-15 UI改善 */
+@media (max-width:420px){.pill .pc{display:none}}
+@media (max-width:360px){.brand h1{font-size:15px!important}.unof{padding:1px 3px}}
+@media (max-width:799px){.brand h1 .t-pre,.brand small{display:none}}
+@media (max-width:360px){.pill.offline{display:none}}
+@media (max-width:599px){.brand h1 .t-pre,#setbtn .t-share{display:none}.brand h1{letter-spacing:0;font-size:17px}.brand{gap:6px}.topr{gap:4px}.iconbtn{padding:0 9px}}   /* スマホではタイトルを「tokenカウンター」に短くして切れないように */
+.set-h{position:sticky;top:-12px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-12px -12px 0;padding:10px 12px;background:var(--bg2);border-bottom:1px solid var(--line-soft);border-radius:12px 12px 0 0}
+.set-h b{font-size:15px;letter-spacing:.05em}
+.set-h .btn{min-height:36px;padding:4px 12px}
+.firstlead{margin:0;font-size:14px;color:var(--fg)}
+/* 小さいボタンの押せる範囲を広げる（見た目はそのまま／少し大きく） */
+.swapchip{position:relative;min-width:40px;min-height:30px;font-size:16px}
+.swapchip::after,.dicen::after,.mini .capbtn::after{content:'';position:absolute;inset:-8px}
+.dicen{min-width:26px;height:22px;line-height:20px;font-size:12px}
+.dicen::after{inset:-12px -12px -4px -4px}
+.mini .capbtn{position:relative}
+/* オンライン：相手が変えた数値を光らせる */
+@keyframes kflash{0%{box-shadow:0 0 0 3px var(--gold),0 0 18px rgba(214,180,106,.75);background-color:rgba(214,180,106,.25)}100%{box-shadow:0 0 0 0 rgba(214,180,106,0);background-color:rgba(214,180,106,0)}}
+.flash{animation:kflash 1.6s ease-out;border-radius:8px}
 </style>
 </head>
 <body>
 <div class="wrap view-focus" id="app">
   <header class="top">
-    <div class="brand"><span class="unof" title="非公式のファンメイドツール">非公式</span><h1>神椿TCG tokenカウンター</h1><small>Unofficial fan tool</small></div>
+    <div class="brand"><span class="unof" title="非公式のファンメイドツール">非公式</span><h1><span class="t-pre">神椿TCG </span>tokenカウンター</h1><small>Unofficial fan tool</small></div>
     <div class="topr">
       <span class="pill" id="netpill"><span class="dot"></span>オフライン</span>
       <button class="iconbtn" id="compactbtn" title="表示を切り替え">詳細</button>
-      <button class="iconbtn" id="setbtn" aria-expanded="false" aria-controls="settings">設定・共有</button>
+      <button class="iconbtn" id="setbtn" aria-expanded="false" aria-controls="settings" aria-label="設定・共有">設定<span class="t-share">・共有</span></button>
     </div>
   </header>
 
   <section class="settings" id="settings" hidden aria-label="設定・共有">
+    <div class="set-h"><b>設定・共有</b><button class="btn" id="setx" aria-label="設定を閉じる">✕ 閉じる</button></div>
     <details class="howto" id="howto">
-      <summary>使い方</summary>
+      <summary>使い方（はじめての方へ）</summary>
       <dl>
         <dt>1台で遊ぶ</dt>
         <dd>下の「1台で遊ぶ」を選び、端末をテーブルに置いて向かい合わせで使います。丸をタップするか −／＋ で数値を変え、手番が終わったら「ターン終了」。間違えたら「↶ 戻す」。</dd>
         <dt>オンラインで遊ぶ</dt>
-        <dd>「オンラインで遊ぶ」→「対戦を作る」で4文字のコードが出ます。招待リンクかコードを相手に伝えてください（公開の投稿には書かず、DMなどで）。相手はリンクを開くか、コードを入力して参加します。</dd>
+        <dd>「オンラインで遊ぶ」→「対戦を作る」で4文字のコードが出ます。招待リンクかコードを相手に伝えてください（公開の投稿には書かず、DMなどで）。相手はリンクを開くか、コードを入力して参加します。相手が変えた数値は光って知らせます。自分の直前の操作は「↶ 戻す」で取り消せます。</dd>
         <dt>ホーム画面に追加</dt>
         <dd>iPhone（Safari）は共有ボタン →「ホーム画面に追加」、Android（Chrome）はメニュー →「ホーム画面に追加」。アプリのように開け、一度開けば電波がなくても起動できます。</dd>
         <dt>表示</dt>
@@ -674,6 +693,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
     </details>
     <div class="sgroup">
       <h2 class="sh">遊び方を選ぶ</h2>
+      <p class="firstlead" id="firstlead" hidden>ようこそ！まず遊び方を選んでください。くわしくは上の「使い方」へ。</p>
       <div class="modecards" role="radiogroup" aria-label="遊び方">
         <button class="modecard" id="m-off" role="radio" aria-checked="true">
           <svg class="mc-ic" viewBox="0 0 40 40" aria-hidden="true"><rect x="11" y="6" width="18" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="20" cy="2.5" r="2" fill="currentColor"/><circle cx="20" cy="37.5" r="2" fill="currentColor"/><path d="M15 15h10M15 20h10M15 25h10" stroke="currentColor" stroke-width="1.6" opacity=".6"/></svg>
@@ -918,7 +938,19 @@ function snapshot(){
   hist.push(JSON.stringify(S)); if (hist.length > 50) hist.shift();
   histTick = true; setTimeout(() => { histTick = false; }, 0);
 }
+// オンライン：自分が変えた直前の値を戻す（その後に相手が同じ値を変えていたら戻さない）
+const onHist = []; let undoing = false;
+let prevVals = null, localTick = false;   // 相手の変更を光らせる用
+function undoOnline(){
+  const e = onHist.pop();
+  if (!e){ toast('戻せる操作がありません'); render(); return; }
+  if (Object.keys(e.after).some(x => S[e.k][x] !== e.after[x])){ onHist.length = 0; toast('そのあとで値が変わったため戻せません'); render(); return; }
+  undoing = true; patch(e.k, e.before); undoing = false;
+  addLog('↶ 取り消し：' + (e.m || '直前の操作'), e.k);
+  capMode.clear(); toast('直前の操作を戻しました');
+}
 function undo(){
+  if (mode === 'online'){ undoOnline(); return; }
   if (mode !== 'offline') return;
   if (!hist.length){ toast('戻せる操作がありません'); return; }
   const last = (S.game.log || [])[0];
@@ -933,6 +965,11 @@ function patch(k, o){
   snapshot();
   if (mode === 'online' && (seat === 'watch')){ toast('観戦中は操作できません'); return; }
   if (mode === 'online' && role === 'guest' && !(conn && conn.open)){ toast('接続されていません。再接続を待ってください'); return; }
+  if (mode === 'online' && !undoing && (k === 'p1' || k === 'p2') && (k === seat || S.game.oe)){
+    const before = {}; for (const x in o) before[x] = S[k][x];
+    onHist.push({k, before, after: {...o}, m: null}); if (onHist.length > 20) onHist.shift();
+  }
+  localTick = true;
   Object.assign(S[k], o);
   if (mode === 'online' && role === 'guest'){
     const q = ++seq; unacked.push({q, k, o}); try { conn.send({t:'p', k, o, q}); } catch(e){}
@@ -940,6 +977,7 @@ function patch(k, o){
   persist(); render();
 }
 function addLog(msg, target){
+  const h = onHist[onHist.length - 1]; if (h && h.m === null) h.m = msg;
   if (target && mode === 'online' && (seat === 'p1' || seat === 'p2') && target !== seat) msg += `（操作：${pn(seat)}）`;
   const t = new Date(); const ts = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
   const e = {ts, m: msg};
@@ -977,7 +1015,7 @@ function teardown(){
   for (const c of conns){ try { c.close(); } catch(e){} } conns.clear();
   if (conn){ try { conn.close(); } catch(e){} conn = null; }
   if (peer){ try { peer.destroy(); } catch(e){} peer = null; }
-  role = null; roomCode = null; netState = 'idle'; unacked = [];
+  role = null; roomCode = null; netState = 'idle'; unacked = []; onHist.length = 0; prevVals = null;
 }
 function startHost(code, resumeState){
   if (typeof Peer === 'undefined'){ toast('通信ライブラリを読み込めませんでした'); return; }
@@ -1087,7 +1125,7 @@ function dial(){
     const s = defaults();
     for (const k of ['game','p1','p2']) Object.assign(s[k], clean(k, m.s[k]));
     if (m.q) unacked = unacked.filter(u => u.q > m.q);
-    if (c._fresh){ c._fresh = false; lastDie = s.game.dice ? s.game.dice.n : null; }   // つないだ直後は過去のサイコロを再生しない
+    if (c._fresh){ c._fresh = false; lastDie = s.game.dice ? s.game.dice.n : null; prevVals = null; }   // つないだ直後は過去のサイコロを再生しない
     for (const u of unacked) Object.assign(s[u.k], u.o);
     S = s; render();
   });
@@ -1250,7 +1288,7 @@ function doReset(){
   const d = defaults();
   for (const p of ['p1','p2']){ d[p].name = S[p].name; Object.assign(S[p], d[p]); }
   const oe = !!S.game.oe; Object.assign(S.game, d.game); S.game.oe = oe;
-  capMode.clear(); winHidden.clear();
+  capMode.clear(); winHidden.clear(); onHist.length = 0;
   if (mode === 'online' && role === 'host') broadcast(null, 0);
   persist(); render(); addLog('対戦をリセットしました');
 }
@@ -1840,6 +1878,7 @@ function render(){
 
   const bottom = bigP, top = other(bottom);
   updatePanel($('panel-bottom'), bottom); updatePanel($('panel-top'), top); updateMini(top);
+  flashRemote();
   $('panel-top').setAttribute('aria-label', pn(top)); $('panel-bottom').setAttribute('aria-label', pn(bottom));
 
   const g = S.game;
@@ -1849,7 +1888,7 @@ function render(){
   $('artist').checked = !!g.artist; $('artist').disabled = !g.first;
   const oppTurn = !!g.first && mode === 'online' && seat !== g.active;
   $('endturn').disabled = oppTurn;
-  $('undo').hidden = mode === 'online'; $('undo').disabled = !hist.length;
+  $('undo').hidden = mode === 'online' && seat !== 'p1' && seat !== 'p2'; $('undo').disabled = mode === 'online' ? !onHist.length : !hist.length;
   $('compactbtn2').textContent = compact ? '詳細' : '簡潔';
   setBtnLabel($('endturn'), !g.first ? '先攻・後攻' : oppTurn ? '相手の手番' : 'ターン終了');
 
@@ -1904,11 +1943,11 @@ function render(){
   // network UI
   const pill = $('netpill');
   const states = {
-    idle:['', 'オンライン・未接続'], connecting:['wait','接続中…'], hosting:['on', `${roomCode}・相手 ${conns.size ? '接続中' : '待ち'}`],
-    connected:['on', `${roomCode} に接続中`], lost:['wait','再接続中…'], notfound:['bad','対戦が見つかりません'], error:['bad','接続できません']
+    idle:['', 'オンライン・未接続'], connecting:['wait','接続中…'], hosting:['on', `<span class="pc">${esc(roomCode)}・</span>${conns.size ? '接続中' : '相手待ち'}`],
+    connected:['on', `<span class="pc">${esc(roomCode)}・</span>接続中`], lost:['wait','再接続中…'], notfound:['bad','対戦が見つかりません'], error:['bad','接続できません']
   };
   const [cls, txt] = mode === 'online' ? (states[netState] || states.idle) : ['on', '1台で対戦'];
-  pill.innerHTML = `<span class="dot ${cls}"></span>${esc(txt)}`;
+  pill.innerHTML = `<span class="dot ${cls}"></span>${txt}`;   // txt は固定文とエスケープ済みのコードのみ
   pill.classList.toggle('offline', mode !== 'online');
   $('lobby').hidden = !!role; $('room').hidden = !role;
   if (role){
@@ -1926,6 +1965,26 @@ function render(){
   if (!role && last && last.code && Date.now() - (last.at||0) < 12*3600*1000){
     rs.hidden = false; rs.textContent = `前回の対戦 ${last.code} に${last.role === 'host' ? '戻る（ホスト）' : '再参加'}`;
   } else rs.hidden = true;
+}
+// オンライン：相手の端末で変わった数値を光らせ、1〜2項目なら通知も出す
+const FLASH_KEYS = ['vol','noise','a','b','o','lu'];
+function flashRemote(){
+  const cur = {p1:{}, p2:{}}; for (const p of ['p1','p2']) for (const k of FLASH_KEYS) cur[p][k] = S[p][k] || 0;
+  const was = prevVals, local = localTick; prevVals = cur; localTick = false;
+  if (mode !== 'online' || !was || local) return;
+  const ch = [];
+  for (const p of ['p1','p2']) for (const k of FLASH_KEYS) if (was[p][k] !== cur[p][k]) ch.push([p, k, was[p][k], cur[p][k]]);
+  if (!ch.length) return;
+  const fl = el => { if (!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
+  for (const [p, k] of ch){
+    const pan = document.querySelector(`.player[data-p="${p}"]`);
+    if (pan){
+      if (k === 'lu') fl(pan.querySelector('[data-f="limtog"]'));
+      else { fl(pan.querySelector(`[data-f="t-${k}"]`)); fl(pan.querySelector(k === 'vol' ? '[data-f="voln"]' : k === 'noise' ? '[data-f="noisen"]' : `[data-f="${k}n"]`)); }
+    }
+    if (p === other(bigP)) fl($('mini').querySelector(k === 'lu' ? '.st.lim' : k === 'noise' ? '.st:nth-of-type(3)' : `.st.${k}`));
+  }
+  if (ch.length <= 2) toast(ch.map(([p, k, a, b]) => `${pn(p)}：` + (k === 'lu' ? `LIMITED ${b ? '使用' : '使用前に戻した'}` : `${NAME[k]} ${a}→${b}`)).join('　'));
 }
 function inviteURL(){ const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('room', roomCode || ''); return u.toString(); }
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -2025,11 +2084,12 @@ $('oe').onchange = e => {
   patch('game', {oe: e.target.checked});
   addLog(e.target.checked ? '設定：相手の数値も操作できるようにしました' : '設定：自分の数値だけ操作できるようにしました');
 };
-$('setclose').onclick = () => closeSettings();
+$('setclose').onclick = $('setx').onclick = () => closeSettings();
 $('netpill').onclick = () => $('setbtn').click();
 $('follow').onchange = e => store.set('kt-follow', e.target.checked ? '1' : '0');
+let firstVisit = false;
 $('m-off').onclick = () => {
-  if (mode === 'offline') return;
+  if (mode === 'offline'){ if (firstVisit){ firstVisit = false; closeSettings(); } return; }   // 初回は「1台で遊ぶ」を選んだらそのまま盤面へ
   teardown(); mode = 'offline'; seat = 'p1'; S = loadJSON('kt-offline') || defaults(); store.set('kt-mode', 'offline'); lastDie = S.game.dice ? S.game.dice.n : null; loadView(); bigP = followOn() && S.game.first ? S.game.active : 'p1'; render();
 };
 $('m-on').onclick = () => { if (mode === 'online') return; persist(); hist.length = 0; mode = 'online'; store.set('kt-mode', 'online'); S = defaults(); loadView(); render(); };
@@ -2106,7 +2166,7 @@ if (/^[A-Z0-9]{4}$/.test(qroom)){
   loadView();
   lastDie = S.game.dice ? S.game.dice.n : null;   // 再読み込みで前のサイコロを再生しない
   if (followOn() && S.game.first) bigP = S.game.active;
-  if (!store.get('kt-seen')){ $('howto').open = true; $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
+  if (!store.get('kt-seen')){ firstVisit = true; $('firstlead').hidden = false; $('settings').hidden = false; $('setbtn').setAttribute('aria-expanded','true'); store.set('kt-seen','1'); }
   render();
   let last = null; try { last = JSON.parse(store.get('kt-last')); } catch(e){}
   if (mode === 'online' && last && last.code && Date.now() - (last.at || 0) < 12*3600*1000){
