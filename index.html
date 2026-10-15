@@ -436,10 +436,32 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .compact .crow[data-tk="vol"] .cpips{display:grid;grid-template-columns:repeat(5,auto);grid-template-rows:repeat(2,auto);justify-content:start;align-content:center;gap:4px;height:100%;container-type:size}
   .compact .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 16px) / 5), calc((100cqh - 4px) / 2), 46px);height:auto;max-width:none;max-height:none;aspect-ratio:1;font-size:13px;font-weight:700}
 }
+/* VOLノイズを1行にたたむ（縦向きの簡潔表示） */
+@media (max-width:999px) and (min-height:541px){
+  .nz-mini .compact .crows{grid-template-rows:minmax(0,2fr) auto repeat(3,minmax(0,1fr))}
+  .nz-mini .compact .crow[data-tk="vol"]{grid-row:auto}
+  .nz-mini .compact .crow[data-tk="noise"] .cpips{display:none}
+  .nz-mini .compact .crow[data-tk="noise"]{grid-template-columns:auto auto minmax(0,1fr) auto;padding-block:2px}
+  .nz-mini .compact .crow[data-tk="noise"] .cnum{grid-column:2;text-align:left;font-size:20px}
+  .nz-mini .compact .crow[data-tk="noise"] .tstep{grid-column:4;height:32px;min-height:32px}
+  .nz-mini .view-equal.compact .crow[data-tk="noise"] .tstep{height:24px;min-height:24px}
+  .nz-mini .view-equal.compact .crow[data-tk="noise"] .cnum{font-size:16px}
+  .nz-mini .view-equal.compact .crow[data-tk="noise"] .cic-t{padding:1px 5px}
+  .nz-mini .compact .crow[data-tk="noise"] .cic-t{display:inline-block;padding:2px 6px}
+  .nz-mini .compact .crow[data-tk="noise"] .cic-t br{display:none}
+  .compact .crow[data-tk="noise"] .cic-t::after{content:' ▴';font-size:.85em;color:var(--muted)}
+  .nz-mini .compact .crow[data-tk="noise"] .cic-t::after{content:' ▾'}
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"]{grid-template-columns:auto auto minmax(0,1fr) 112px;grid-template-rows:auto;grid-template-areas:"ic num . step";column-gap:12px}
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cnum{grid-area:num;font-size:26px;padding-top:0}
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cic-t{font-size:13px;padding:5px 8px}
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .tstep{grid-area:step;grid-template-columns:1fr 1fr;grid-template-rows:none;width:112px;height:40px;min-height:40px}
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .tstep button:first-child{order:0}
+  .nz-mini .view-focus.compact #panel-bottom .crow[data-tk="noise"] .tstep button+button{border-bottom:0;border-left:1px solid var(--line)}
+}
 /* 縦向きの「自分だけ」（1人表示）：数字はアイコンの下、＋−は縦並びにして、丸をできるだけ大きく */
 @media (max-width:999px) and (min-height:600px){
   .view-focus.compact #panel-bottom .crows{gap:8px}
-  .view-focus.compact #panel-bottom .crow{grid-template-columns:48px minmax(0,1fr) 58px;grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr);grid-template-areas:". pips step" "ic pips step" "num pips step" ". pips step";column-gap:10px;row-gap:0;padding:2px 4px}
+  .view-focus.compact #panel-bottom .crow{grid-template-columns:44px minmax(0,1fr) 52px;grid-template-rows:minmax(0,1fr) auto auto minmax(0,1fr);grid-template-areas:". pips step" "ic pips step" "num pips step" ". pips step";column-gap:8px;row-gap:0;padding:2px 2px}
   .view-focus.compact #panel-bottom .cic{grid-area:ic;height:auto;align-self:center}
   .view-focus.compact #panel-bottom .cic .ic{width:40px;height:40px}
   .view-focus.compact #panel-bottom .cic-t{font-size:12px;padding:4px 2px}
@@ -451,13 +473,13 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
   .view-focus.compact #panel-bottom .pname{min-width:4.5em}
   .view-focus.compact #panel-bottom .limtog .ic{width:32px;height:32px}
   .view-focus.compact #panel-bottom .cnum small{font-size:.5em}
-  .view-focus.compact #panel-bottom .cpips{grid-area:pips;height:100%;container-type:size;gap:6px}
-  .view-focus.compact #panel-bottom .cp{flex:0 0 auto;width:min(calc((100cqw - 24px) / 5), 100cqh, 64px);height:auto;max-width:none;max-height:none;aspect-ratio:1}
+  .view-focus.compact #panel-bottom .cpips{grid-area:pips;height:100%;container-type:size;gap:5px}
+  .view-focus.compact #panel-bottom .cp{flex:0 0 auto;width:min(calc((100cqw - 20px) / 5), 100cqh, 64px);height:auto;max-width:none;max-height:none;aspect-ratio:1}
   .view-focus.compact #panel-bottom .cp-tk,.view-focus.compact #panel-bottom .cp-vol{border-width:2px}
   .view-focus.compact #panel-bottom .crow[data-tk="noise"] .cp{width:min(calc((100cqw - 24px) / 5), 75cqh, 52px);aspect-ratio:3/4;border-radius:5px}
-  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cpips{gap:6px}
-  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 24px) / 5), calc((100cqh - 6px) / 2), 64px);font-size:clamp(13px,4cqw,18px)}
-  .view-focus.compact #panel-bottom .tstep{grid-area:step;grid-template-columns:1fr;grid-template-rows:1fr 1fr;width:58px;height:100%;max-height:none;min-height:56px;border-radius:12px}
+  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cpips{gap:5px}
+  .view-focus.compact #panel-bottom .crow[data-tk="vol"] .cp{width:min(calc((100cqw - 20px) / 5), calc((100cqh - 5px) / 2), 64px);font-size:clamp(13px,4cqw,18px)}
+  .view-focus.compact #panel-bottom .tstep{grid-area:step;grid-template-columns:1fr;grid-template-rows:1fr 1fr;width:52px;height:100%;max-height:none;min-height:56px;border-radius:12px}
   .view-focus.compact #panel-bottom .tstep button{font-size:26px}
   .view-focus.compact #panel-bottom .tstep button:first-child{order:2}
   .view-focus.compact #panel-bottom .tstep button+button{border-left:0;border-bottom:1px solid var(--line)}
@@ -712,6 +734,7 @@ details>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:
       </div>
       <div class="optlist">
         <label class="check" id="wakewrap"><input type="checkbox" id="wake"> 画面を消さない</label>
+        <label class="check"><input type="checkbox" id="nzmini" checked> <span>VOLノイズを1行に小さく表示<small class="note">縦向きの簡潔表示で、ほかの項目を大きくします。「VOLノイズ」の文字をタップしても開閉できます</small></span></label>
         <label class="check"><input type="checkbox" id="swipe"> <span>サイコロを画面に出してスワイプで投げる<small class="note">サイコロのボタンを押すと画面にサイコロが出ます。指ではじいた方向に転がります</small></span></label>
       </div>
     </div>
@@ -873,6 +896,10 @@ let bigP = 'p1';
 let viewMode = 'equal';
 const viewKey = () => mode === 'online' ? 'kt-view-on' : 'kt-view-off';
 function loadView(){ viewMode = store.get(viewKey()) || (mode === 'online' ? 'focus' : 'equal'); }
+// VOLノイズは使う頻度が低いので、縦向きの簡潔表示では1行に小さくたたむ（初期設定）
+let noiseMini = store.get('kt-nzmini') !== '0';
+const portraitCompact = matchMedia('(max-width:999px) and (min-height:541px)');
+function setNoiseMini(v){ noiseMini = v; store.set('kt-nzmini', v ? '1' : '0'); render(); }
 let compact = store.get('kt-compact') === null ? true : store.get('kt-compact') === '1';   // 初めての人は簡潔表示から
 let collapsed = (() => { try { const v = JSON.parse(store.get('kt-collapsed')); if (Array.isArray(v)) return new Set(v); } catch(e){} return new Set(['setup']); })();
 if (store.get('kt-cv') !== '2'){ collapsed.add('cap'); store.set('kt-cv', '2'); store.set('kt-collapsed', JSON.stringify([...collapsed])); }
@@ -1791,6 +1818,7 @@ function render(){
   app.classList.toggle('swipe-on', $('swipe').checked);
   app.classList.toggle('ctrl-flip', mode === 'offline' && viewMode === 'equal' && flipOn() && !!S.game.first && S.game.active === other(bigP));
   document.body.classList.toggle('compact-body', compact);
+  document.body.classList.toggle('nz-mini', noiseMini); $('nzmini').checked = noiseMini;
   $('compactbtn').textContent = compact ? '詳細' : '簡潔'; $('compactbtn').title = compact ? 'ヒントやログも見られる詳細表示に切り替え' : 'スクロールなしの簡潔表示に切り替え';
   document.querySelectorAll('.sec').forEach(s => {
     const c = collapsed.has(s.dataset.sec); s.classList.toggle('closed', c);
@@ -1921,6 +1949,7 @@ document.addEventListener('click', e => {
     if (b.dataset.act === 'adj') adjust(p, b.dataset.k, +b.dataset.d); else setVal(p, b.dataset.k, +b.dataset.v);
     return;
   }
+  if (b.dataset.capt === 'noise' && compact && portraitCompact.matches && !capMode.has(b.closest('.player').dataset.p + ':noise')){ setNoiseMini(!noiseMini); return; }
   if (b.dataset.capt){
     if (!canCap()){ toast('観戦中は操作できません'); return; }
     const key = b.closest('.player').dataset.p + ':' + b.dataset.capt;
@@ -2030,6 +2059,7 @@ async function setWake(on, quiet){
 if (!('wakeLock' in navigator)) $('wakewrap').hidden = true;
 $('wake').checked = store.get('kt-wake') !== '0';
 $('swipe').checked = store.get('kt-swipe') === '1';
+$('nzmini').onchange = e => setNoiseMini(e.target.checked);
 $('swipe').onchange = e => { store.set('kt-swipe', e.target.checked ? '1' : '0'); render(); };
 $('wake').onchange = e => { store.set('kt-wake', e.target.checked ? '1' : '0'); setWake(e.target.checked); };
 const wantWake = () => 'wakeLock' in navigator && $('wake').checked && document.visibilityState === 'visible' && !wl;
